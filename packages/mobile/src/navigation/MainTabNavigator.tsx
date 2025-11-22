@@ -20,7 +20,6 @@ function HomeStack() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        animationEnabled: true,
       }}
     >
       <Stack.Screen name="HomeList" component={HomeScreen} />
