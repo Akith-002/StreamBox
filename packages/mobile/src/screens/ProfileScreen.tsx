@@ -88,7 +88,10 @@ export default function ProfileScreen() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      edges={["top"]}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
@@ -200,7 +203,7 @@ export default function ProfileScreen() {
           </Text>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -208,7 +211,7 @@ const styles = StyleSheet.create({
   // Header Styles
   headerContainer: {
     alignItems: "center",
-    paddingTop: 60, // Push down for status bar
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xl,
     marginBottom: spacing.sm,
   },

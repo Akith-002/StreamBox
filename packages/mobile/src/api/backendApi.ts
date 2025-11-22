@@ -86,7 +86,29 @@ export const backendApi = createApi({
         url: `/favorites/${tmdbId}?mediaType=${mediaType}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Favorites"],
+      // Optimistic update: immediately remove from cache
+      async onQueryStarted(
+        { tmdbId, mediaType = "movie" },
+        { dispatch, queryFulfilled }
+      ) {
+        const patchResult = dispatch(
+          backendApi.util.updateQueryData(
+            "getFavorites",
+            undefined,
+            (draft) => {
+              return draft.filter(
+                (fav) => !(fav.tmdbId === tmdbId && fav.mediaType === mediaType)
+              );
+            }
+          )
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          // Revert the optimistic update on error
+          patchResult.undo();
+        }
+      },
     }),
     checkFavorite: builder.query<
       boolean,

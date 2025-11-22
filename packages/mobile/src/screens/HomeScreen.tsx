@@ -11,7 +11,9 @@ import {
   ImageBackground,
   Animated,
   Image,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
@@ -25,225 +27,161 @@ import {
 import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
 import { Movie, TVShow, MediaItem, isMovie, isTVShow } from "../types/Movie";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
-import MediaCard from "../components/MediaCard";
 
 const HERO_ROTATION_INTERVAL = 5000;
 const screenWidth = Dimensions.get("window").width;
+const HERO_HEIGHT = screenWidth * 1.3; // Taller, more immersive hero
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
 
-  const {
-    data: trendingMoviesData,
-    isLoading: loadingMovies,
-    error: moviesError,
-  } = useGetTrendingMoviesQuery("week");
-
-  const {
-    data: trendingTVData,
-    isLoading: loadingTV,
-    error: tvError,
-  } = useGetTrendingTVQuery("week");
-
-  const {
-    data: topRatedMoviesData,
-    isLoading: loadingTopRated,
-    error: topRatedError,
-  } = useGetTopRatedMoviesQuery(1);
-
-  const {
-    data: popularTVData,
-    isLoading: loadingPopularTV,
-    error: popularTVError,
-  } = useGetPopularTVQuery(1);
+  // API Hooks (Same as before)
+  const { data: trendingMoviesData, isLoading: loadingMovies } =
+    useGetTrendingMoviesQuery("week");
+  const { data: trendingTVData, isLoading: loadingTV } =
+    useGetTrendingTVQuery("week");
+  const { data: topRatedMoviesData, isLoading: loadingTopRated } =
+    useGetTopRatedMoviesQuery(1);
+  const { data: popularTVData, isLoading: loadingPopularTV } =
+    useGetPopularTVQuery(1);
 
   const isLoading =
     loadingMovies || loadingTV || loadingTopRated || loadingPopularTV;
 
-  // Log errors for debugging
-  useEffect(() => {
-    if (moviesError) console.log("Movies Error:", moviesError);
-    if (tvError) console.log("TV Error:", tvError);
-    if (topRatedError) console.log("Top Rated Error:", topRatedError);
-    if (popularTVError) console.log("Popular TV Error:", popularTVError);
-  }, [moviesError, tvError, topRatedError, popularTVError]);
-
-  // Log data for debugging
-  useEffect(() => {
-    console.log("Trending Movies:", trendingMoviesData?.results?.length || 0);
-    console.log("Trending TV:", trendingTVData?.results?.length || 0);
-    console.log("Top Rated Movies:", topRatedMoviesData?.results?.length || 0);
-    console.log("Popular TV:", popularTVData?.results?.length || 0);
-  }, [trendingMoviesData, trendingTVData, topRatedMoviesData, popularTVData]);
-
   const [heroIndex, setHeroIndex] = useState(0);
-  const [nextHeroIndex, setNextHeroIndex] = useState(0);
-
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const [overlayOpacity, setOverlayOpacity] = useState<number>(0);
-
-  useEffect(() => {
-    const id = fadeAnim.addListener(({ value }) => setOverlayOpacity(value));
-    return () => {
-      try {
-        fadeAnim.removeListener(id);
-      } catch (e) {
-        // ignore
-      }
-    };
-  }, [fadeAnim]);
+  const fadeAnim = useRef(new Animated.Value(1)).current; // Start at 1
 
   const trendingMovies = (trendingMoviesData?.results ?? []) as Movie[];
   const trendingTV = (trendingTVData?.results ?? []) as TVShow[];
   const topRatedMovies = (topRatedMoviesData?.results ?? []) as Movie[];
   const popularTV = (popularTVData?.results ?? []) as TVShow[];
 
-  // Combine movies and TV shows for hero section
-  const allHeroItems: MediaItem[] = [
-    ...trendingMovies.slice(0, 3),
-    ...trendingTV.slice(0, 2),
-  ];
-  // Filter out Person types to ensure only Movie and TVShow are in hero items
-  const heroItems = allHeroItems
+  // Filter and Setup Hero Items
+  const heroItems = [...trendingMovies.slice(0, 3), ...trendingTV.slice(0, 2)]
     .filter((item): item is Movie | TVShow => isMovie(item) || isTVShow(item))
     .slice(0, 5);
-  const currentItem = heroItems[heroIndex];
-  const nextItem = heroItems[nextHeroIndex];
 
-  const changeHeroItem = (newIndex: number) => {
-    if (newIndex === heroIndex) return;
+  const currentHero = heroItems[heroIndex];
 
-    setNextHeroIndex(newIndex);
+  // Carousel Logic
+  useEffect(() => {
+    if (heroItems.length === 0) return;
+    const interval = setInterval(() => {
+      // Fade out
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start(() => {
+        // Switch Content
+        setHeroIndex((prev) => (prev + 1) % heroItems.length);
+        // Fade in
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, HERO_ROTATION_INTERVAL);
+    return () => clearInterval(interval);
+  }, [heroItems.length]);
 
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 800,
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (finished) {
-        setHeroIndex(newIndex);
-        fadeAnim.setValue(0);
-      }
+  const handleMediaPress = (item: MediaItem) => {
+    navigation.navigate("HomeTab", {
+      screen: isMovie(item) ? "Details" : "TVDetails",
+      params: isMovie(item) ? { movieId: item.id } : { tvId: item.id },
     });
   };
 
-  useEffect(() => {
-    if (heroItems.length === 0) return;
+  // --- Render Components ---
 
-    const interval = setInterval(() => {
-      const nextIndex = (heroIndex + 1) % heroItems.length;
-      changeHeroItem(nextIndex);
-    }, HERO_ROTATION_INTERVAL);
+  const HeroSection = () => {
+    if (!currentHero) return null;
 
-    return () => clearInterval(interval);
-  }, [heroIndex, heroItems.length]);
-
-  const handleMediaPress = (item: MediaItem) => {
-    if (isMovie(item)) {
-      navigation.navigate("HomeTab", {
-        screen: "Details",
-        params: { movieId: item.id },
-      });
-    } else if (isTVShow(item)) {
-      navigation.navigate("HomeTab", {
-        screen: "TVDetails",
-        params: { tvId: item.id },
-      });
-    }
-  };
-
-  // Only show full-screen loading if we have no data at all
-  const hasNoData =
-    !trendingMoviesData &&
-    !trendingTVData &&
-    !topRatedMoviesData &&
-    !popularTVData;
-  const hasErrors = moviesError || tvError || topRatedError || popularTVError;
-
-  if (isLoading && hasNoData) {
-    return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[{ color: colors.textSecondary, marginTop: 16 }]}>
-          Loading content...
-        </Text>
-        {hasErrors && (
-          <Text
-            style={[
-              {
-                color: colors.error,
-                marginTop: 16,
-                paddingHorizontal: 20,
-                textAlign: "center",
-              },
-            ]}
-          >
-            Error loading content. Check your internet connection and TMDB API
-            key.
-          </Text>
-        )}
-      </View>
-    );
-  }
-
-  const renderHeroContent = (item: MediaItem) => {
-    const title = isMovie(item) ? item.title : isTVShow(item) ? item.name : "";
-    const year = isMovie(item)
-      ? item.release_date
-        ? item.release_date.slice(0, 4)
-        : ""
-      : isTVShow(item)
-      ? item.first_air_date
-        ? item.first_air_date.slice(0, 4)
-        : ""
+    const title = isMovie(currentHero)
+      ? currentHero.title
+      : isTVShow(currentHero)
+      ? currentHero.name
       : "";
-    const voteAverage =
-      isMovie(item) || isTVShow(item) ? item.vote_average || 0 : 0;
+    const imageUri = currentHero.poster_path
+      ? `${TMDB_IMAGE_BASE_URL}${currentHero.poster_path}`
+      : null;
+
+    // Get genres or date for meta info
+    const metaText = isMovie(currentHero)
+      ? currentHero.release_date?.slice(0, 4) || "Movie"
+      : currentHero.first_air_date?.slice(0, 4) || "TV Show";
 
     return (
-      <>
-        <LinearGradient
-          colors={["rgba(15, 23, 42, 0)", "rgba(15, 23, 42, 0.9)"]}
-          style={styles.heroGradient}
-        />
-        <View style={styles.heroContent}>
-          <Text
-            style={[styles.heroTitle, { color: "#FFFFFF" }]}
-            numberOfLines={2}
+      <View style={styles.heroContainer}>
+        <Animated.View style={[styles.heroImageWrapper, { opacity: fadeAnim }]}>
+          {imageUri && (
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+          )}
+          {/* Gradient Mesh for blending */}
+          <LinearGradient
+            colors={["transparent", colors.background]}
+            style={styles.heroGradientBottom}
+            locations={[0.4, 1]}
+          />
+          <LinearGradient
+            colors={["rgba(0,0,0,0.6)", "transparent"]}
+            style={styles.heroGradientTop}
+          />
+        </Animated.View>
+
+        {/* Hero Info Overlay */}
+        <View style={styles.heroContentContainer}>
+          <View style={styles.heroTagContainer}>
+            <Text style={styles.heroTagText}>Trending Now</Text>
+          </View>
+
+          <Animated.Text
+            style={[styles.heroTitle, { opacity: fadeAnim, color: "#FFF" }]}
           >
             {title}
-          </Text>
-          <View style={styles.heroMeta}>
-            <LinearGradient
-              colors={[colors.primary, colors.accent]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.heroRating}
-            >
-              <Feather name="star" size={14} color="#FFFFFF" />
-              <Text style={styles.heroRatingText}>
-                {voteAverage.toFixed(1)}
+          </Animated.Text>
+
+          <Animated.View style={[styles.heroMetaRow, { opacity: fadeAnim }]}>
+            <Text style={styles.heroMetaText}>{metaText}</Text>
+            <Text style={styles.heroDot}>•</Text>
+            <View style={styles.ratingContainer}>
+              <Feather name="star" size={14} color={colors.primary} />
+              <Text style={[styles.ratingText, { color: colors.primary }]}>
+                {currentHero.vote_average?.toFixed(1)}
               </Text>
-            </LinearGradient>
-            <Text style={styles.heroYear}>{year}</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => handleMediaPress(item)}
-            activeOpacity={0.85}
-          >
-            <LinearGradient
-              colors={[colors.primary, colors.accent]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.heroButton}
+            </View>
+          </Animated.View>
+
+          <View style={styles.heroButtons}>
+            <TouchableOpacity
+              style={[styles.playButton, { backgroundColor: "#FFF" }]}
+              activeOpacity={0.8}
+              onPress={() => handleMediaPress(currentHero)}
             >
-              <Feather name="play" size={18} color="#FFFFFF" />
-              <Text style={styles.heroButtonText}>Watch Now</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              <Feather name="play" size={20} color="#000" />
+              <Text style={styles.playButtonText}>Play</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.detailsButton,
+                { backgroundColor: "rgba(255,255,255,0.2)" },
+              ]}
+              activeOpacity={0.8}
+              onPress={() => handleMediaPress(currentHero)}
+            >
+              <Feather name="info" size={20} color="#FFF" />
+              <Text style={styles.detailsButtonText}>Details</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </>
+      </View>
     );
   };
 
@@ -253,413 +191,281 @@ export default function HomeScreen() {
       isMovie(item) || isTVShow(item) ? item.poster_path : null;
 
     return (
-      <TouchableOpacity onPress={() => handleMediaPress(item)}>
-        <View style={styles.movieCard}>
-          {posterPath && (
-            <Image
-              source={{ uri: `${TMDB_IMAGE_BASE_URL}${posterPath}` }}
-              style={styles.moviePoster}
-            />
-          )}
-          <Text
-            style={[styles.movieTitle, { color: colors.text }]}
-            numberOfLines={2}
-          >
-            {title}
-          </Text>
-        </View>
+      <TouchableOpacity
+        style={styles.cardContainer}
+        onPress={() => handleMediaPress(item)}
+        activeOpacity={0.7}
+      >
+        <Image
+          source={{ uri: `${TMDB_IMAGE_BASE_URL}${posterPath}` }}
+          style={[styles.cardImage, { backgroundColor: colors.card }]}
+        />
+        {/* Only show title if it's not too long, otherwise clean look */}
+        <Text
+          style={[styles.cardTitle, { color: colors.textSecondary }]}
+          numberOfLines={1}
+        >
+          {title}
+        </Text>
       </TouchableOpacity>
     );
   };
 
+  const SectionHeader = ({
+    title,
+    onSeeAll,
+  }: {
+    title: string;
+    onSeeAll?: () => void;
+  }) => (
+    <View style={styles.sectionHeader}>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
+      <TouchableOpacity onPress={onSeeAll}>
+        <Text style={[styles.seeAllText, { color: colors.primary }]}>
+          See All
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  if (isLoading && !trendingMovies.length) {
+    return (
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      showsVerticalScrollIndicator={false}
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      edges={["top"]}
     >
-      {/* Debug Info - Remove after testing */}
-      {__DEV__ && (
-        <View
-          style={{
-            padding: 10,
-            backgroundColor: colors.card,
-            margin: 10,
-            borderRadius: 8,
-          }}
-        >
-          <Text style={{ color: colors.text, fontSize: 10 }}>
-            Movies: {trendingMovies.length} | TV: {trendingTV.length} | Top:{" "}
-            {topRatedMovies.length} | Pop: {popularTV.length}
-          </Text>
-          {hasErrors && (
-            <Text style={{ color: colors.error, fontSize: 10 }}>
-              Has Errors!
-            </Text>
-          )}
-        </View>
-      )}
+      <StatusBar
+        barStyle="light-content"
+        translucent
+        backgroundColor="transparent"
+      />
 
-      {/* Featured Hero */}
-      {currentItem && (
-        <View style={styles.heroSection}>
-          {/* Base Layer */}
-          <View style={StyleSheet.absoluteFill}>
-            <ImageBackground
-              source={{
-                uri:
-                  (isMovie(currentItem) || isTVShow(currentItem)) &&
-                  currentItem.backdrop_path
-                    ? `https://image.tmdb.org/t/p/w1280${currentItem.backdrop_path}`
-                    : (isMovie(currentItem) || isTVShow(currentItem)) &&
-                      currentItem.poster_path
-                    ? `${TMDB_IMAGE_BASE_URL}${currentItem.poster_path}`
-                    : "",
-              }}
-              style={styles.heroImage}
-              imageStyle={styles.heroImageStyle}
-            >
-              {renderHeroContent(currentItem)}
-            </ImageBackground>
-          </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <HeroSection />
 
-          {/* Overlay Layer */}
-          <Animated.View
-            style={[StyleSheet.absoluteFill, { opacity: fadeAnim, zIndex: 1 }]}
-          >
-            {nextItem && (
-              <ImageBackground
-                source={{
-                  uri:
-                    (isMovie(nextItem) || isTVShow(nextItem)) &&
-                    nextItem.backdrop_path
-                      ? `https://image.tmdb.org/t/p/w1280${nextItem.backdrop_path}`
-                      : (isMovie(nextItem) || isTVShow(nextItem)) &&
-                        nextItem.poster_path
-                      ? `${TMDB_IMAGE_BASE_URL}${nextItem.poster_path}`
-                      : "",
-                }}
-                style={styles.heroImage}
-                imageStyle={styles.heroImageStyle}
-              >
-                {renderHeroContent(nextItem)}
-              </ImageBackground>
-            )}
-          </Animated.View>
-
-          {/* Carousel Indicators */}
-          <View style={[styles.carouselIndicators, { zIndex: 2 }]}>
-            {heroItems.map((_: MediaItem, index: number) => (
-              <TouchableOpacity
-                key={index}
-                onPress={() => changeHeroItem(index)}
-                activeOpacity={0.7}
-                style={[
-                  styles.indicator,
-                  {
-                    backgroundColor:
-                      index ===
-                      (overlayOpacity > 0.5 ? nextHeroIndex : heroIndex)
-                        ? colors.primary
-                        : `rgba(255, 255, 255, 0.3)`,
-                    width:
-                      index ===
-                      (overlayOpacity > 0.5 ? nextHeroIndex : heroIndex)
-                        ? 24
-                        : 8,
-                  },
-                ]}
-              />
-            ))}
-          </View>
-        </View>
-      )}
-
-      {/* Trending Movies Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Trending Movies
-            </Text>
-            <Text style={[styles.sectionSubtitle, { color: colors.textLight }]}>
-              This week's hottest movies
-            </Text>
-          </View>
-          <TouchableOpacity>
-            <Text style={[styles.seeMore, { color: colors.primary }]}>
-              See all
-            </Text>
-          </TouchableOpacity>
-        </View>
-        {trendingMovies.length > 0 ? (
+        <View style={styles.contentContainer}>
+          {/* Trending Movies */}
+          <SectionHeader title="Trending Movies" />
           <FlatList
-            data={trendingMovies.slice(0, 10)}
+            data={trendingMovies}
             horizontal
             showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => `trending-movie-${item.id}`}
             renderItem={renderMediaCard}
-            contentContainerStyle={styles.horizontalList}
+            contentContainerStyle={styles.listContent}
+            keyExtractor={(item) => `tm-${item.id}`}
           />
-        ) : (
-          <View
-            style={{
-              paddingHorizontal: spacing.lg,
-              paddingVertical: spacing.xl,
-            }}
-          >
-            <Text style={[{ color: colors.textSecondary }]}>
-              {loadingMovies ? "Loading..." : "No trending movies available"}
-            </Text>
-          </View>
-        )}
-      </View>
 
-      {/* Trending TV Shows Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Trending TV Shows
-            </Text>
-            <Text style={[styles.sectionSubtitle, { color: colors.textLight }]}>
-              Popular series this week
-            </Text>
-          </View>
-          <TouchableOpacity>
-            <Text style={[styles.seeMore, { color: colors.primary }]}>
-              See all
-            </Text>
-          </TouchableOpacity>
+          {/* Trending TV */}
+          <SectionHeader title="Popular TV Shows" />
+          <FlatList
+            data={trendingTV}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            renderItem={renderMediaCard}
+            contentContainerStyle={styles.listContent}
+            keyExtractor={(item) => `tt-${item.id}`}
+          />
+
+          {/* Top Rated */}
+          <SectionHeader title="Top Rated Movies" />
+          <FlatList
+            data={topRatedMovies}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            renderItem={renderMediaCard}
+            contentContainerStyle={styles.listContent}
+            keyExtractor={(item) => `tr-${item.id}`}
+          />
+
+          {/* Popular TV */}
+          <SectionHeader title="Binge-Worthy TV" />
+          <FlatList
+            data={popularTV}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            renderItem={renderMediaCard}
+            contentContainerStyle={styles.listContent}
+            keyExtractor={(item) => `pt-${item.id}`}
+          />
         </View>
-        <FlatList
-          data={trendingTV.slice(0, 10)}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => `trending-tv-${item.id}`}
-          renderItem={renderMediaCard}
-          contentContainerStyle={styles.horizontalList}
-        />
-      </View>
 
-      {/* Top Rated Movies Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Top Rated Movies
-            </Text>
-            <Text style={[styles.sectionSubtitle, { color: colors.textLight }]}>
-              Highest-rated films
-            </Text>
-          </View>
-          <TouchableOpacity>
-            <Text style={[styles.seeMore, { color: colors.primary }]}>
-              See all
-            </Text>
-          </TouchableOpacity>
-        </View>
-        <FlatList
-          data={topRatedMovies.slice(0, 10)}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => `top-movie-${item.id}`}
-          renderItem={renderMediaCard}
-          contentContainerStyle={styles.horizontalList}
-        />
-      </View>
-
-      {/* Popular TV Shows Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Popular TV Shows
-            </Text>
-            <Text style={[styles.sectionSubtitle, { color: colors.textLight }]}>
-              What people are watching
-            </Text>
-          </View>
-          <TouchableOpacity>
-            <Text style={[styles.seeMore, { color: colors.primary }]}>
-              See all
-            </Text>
-          </TouchableOpacity>
-        </View>
-        <FlatList
-          data={popularTV.slice(0, 10)}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => `popular-tv-${item.id}`}
-          renderItem={renderMediaCard}
-          contentContainerStyle={styles.horizontalList}
-        />
-      </View>
-
-      <View style={styles.bottomSpacing} />
-    </ScrollView>
+        <View style={{ height: 100 }} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: spacing.lg,
   },
-  retryButton: {
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.lg,
+  // Hero Styles
+  heroContainer: {
+    height: HERO_HEIGHT,
+    width: screenWidth,
+    position: "relative",
+    justifyContent: "flex-end",
   },
-  heroSection: {
-    marginTop: spacing.xl,
-    marginHorizontal: spacing.lg,
-    borderRadius: borderRadius.xl,
-    overflow: "hidden",
-    height: 380,
-    ...shadows.large,
-  },
-  heroImage: { width: "100%", height: 380, justifyContent: "flex-end" },
-  heroImageStyle: { borderRadius: borderRadius.xl },
-  heroGradient: {
+  heroImageWrapper: {
     ...StyleSheet.absoluteFillObject,
   },
-  heroContent: { padding: spacing.xl, gap: spacing.lg },
-  heroTitle: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    textShadowColor: "rgba(0, 0, 0, 0.8)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 10,
+  heroImage: {
+    width: "100%",
+    height: "100%",
   },
-  heroMeta: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  heroRating: {
+  heroGradientBottom: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: "60%",
+  },
+  heroGradientTop: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    height: "30%",
+  },
+  heroContentContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+    alignItems: "center", // Center align for modern look
+  },
+  heroTagContainer: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 100,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  heroTagText: {
+    color: "#FFF",
+    fontSize: 10,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  heroTitle: {
+    fontSize: 36, // Larger title
+    fontWeight: "800",
+    textAlign: "center",
+    marginBottom: 8,
+    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  heroMetaRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.xl,
-    ...shadows.medium,
+    marginBottom: 24,
+    gap: 8,
   },
-  heroRatingText: {
-    fontSize: fontSizes.sm,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  heroYear: {
-    fontSize: fontSizes.sm,
+  heroMetaText: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 13,
     fontWeight: "600",
-    color: "#FFFFFF",
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
-  heroButton: {
+  heroDot: {
+    color: "rgba(255,255,255,0.4)",
+    fontSize: 13,
+  },
+  ratingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  ratingText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  heroButtons: {
+    flexDirection: "row",
+    gap: 16,
+    width: "100%",
+    paddingHorizontal: spacing.lg,
+    justifyContent: "center",
+  },
+  playButton: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xl,
-    borderRadius: borderRadius.xl,
-    gap: spacing.sm,
-    alignSelf: "flex-start",
-    ...shadows.large,
+    paddingVertical: 14,
+    borderRadius: borderRadius.lg,
+    gap: 8,
+    maxWidth: 160,
   },
-  heroButtonText: {
-    fontSize: fontSizes.md,
-    fontWeight: "bold",
-    color: "#FFFFFF",
+  playButtonText: {
+    color: "#000",
+    fontSize: 16,
+    fontWeight: "700",
   },
-  section: { marginTop: spacing.xl, marginBottom: spacing.md },
+  detailsButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: borderRadius.lg,
+    gap: 8,
+    maxWidth: 160,
+  },
+  detailsButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  // Content Styles
+  contentContainer: {
+    marginTop: spacing.md,
+    paddingBottom: spacing.xl,
+  },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
+    marginTop: spacing.xl,
+    marginBottom: spacing.md,
   },
-  sectionTitle: { fontSize: 24, fontWeight: "bold" },
-  sectionSubtitle: { fontSize: fontSizes.sm, marginTop: 4, fontWeight: "500" },
-  seeMore: { fontSize: fontSizes.sm, fontWeight: "600" },
-  horizontalList: { paddingHorizontal: spacing.lg },
-  horizontalCard: { width: 140, marginRight: spacing.lg },
-  posterWrapper: {
-    position: "relative",
-    width: 140,
-    height: 210,
-    borderRadius: borderRadius.xl,
-    overflow: "hidden",
-  },
-  horizontalPoster: {
-    width: 140,
-    height: 210,
-    borderRadius: borderRadius.xl,
-    ...shadows.large,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  posterGlassOverlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  posterGradient: {
-    flex: 1,
-    justifyContent: "flex-end",
-    padding: spacing.sm,
-  },
-  ratingBadgeSmall: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: borderRadius.md,
-    alignSelf: "flex-start",
-  },
-  ratingSmallText: {
-    fontSize: 10,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-  },
-  horizontalCardTitle: {
-    marginTop: spacing.sm,
-    fontSize: fontSizes.sm,
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: "700",
-    lineHeight: 18,
   },
-  carouselIndicators: {
-    position: "absolute",
-    bottom: spacing.xl,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  indicator: {
-    height: 8,
-    borderRadius: 4,
-    ...shadows.medium,
-  },
-  bottomSpacing: { height: spacing.xxl },
-  movieCard: {
-    width: 140,
-    marginRight: spacing.md,
-  },
-  moviePoster: {
-    width: 140,
-    height: 210,
-    borderRadius: borderRadius.md,
-  },
-  movieTitle: {
-    marginTop: spacing.xs,
-    fontSize: fontSizes.sm,
+  seeAllText: {
+    fontSize: 14,
     fontWeight: "600",
+  },
+  listContent: {
+    paddingHorizontal: spacing.lg,
+    paddingRight: spacing.sm, // Adjust for last item
+  },
+  cardContainer: {
+    marginRight: spacing.md,
+    width: 120, // Fixed width for uniformity
+  },
+  cardImage: {
+    width: 120,
+    height: 180,
+    borderRadius: borderRadius.md,
+    marginBottom: 8,
+  },
+  cardTitle: {
+    fontSize: 12,
+    fontWeight: "500",
+    textAlign: "center",
   },
 });

@@ -11,7 +11,7 @@ import {
 // 1. Import SafeAreaView from the correct library
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import {
   useDiscoverMoviesQuery,
   useDiscoverTVQuery,
@@ -31,14 +31,27 @@ type SortOption =
 
 export default function DiscoverScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const { colors } = useTheme();
 
+  // Get genreId from navigation params if provided
+  const initialGenreId = route.params?.genreId || null;
+
   const [contentType, setContentType] = useState<ContentType>("movie");
-  const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
+  const [selectedGenre, setSelectedGenre] = useState<number | null>(
+    initialGenreId
+  );
   const [sortBy, setSortBy] = useState<SortOption>("popularity.desc");
 
   const { data: movieGenres } = useGetMovieGenresQuery(undefined);
   const { data: tvGenres } = useGetTVGenresQuery(undefined);
+
+  // Update selected genre when route params change
+  React.useEffect(() => {
+    if (route.params?.genreId) {
+      setSelectedGenre(route.params.genreId);
+    }
+  }, [route.params?.genreId]);
 
   const discoverParams: any = {
     sort_by: sortBy,

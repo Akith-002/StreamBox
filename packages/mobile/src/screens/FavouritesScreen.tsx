@@ -10,6 +10,7 @@ import {
   Animated,
   StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -58,20 +59,17 @@ export default function FavouritesScreen() {
 
     setDeletingIds((prev) => new Set(prev).add(tmdbId));
 
-    // Small delay for visual feedback before removal
-    setTimeout(async () => {
-      try {
-        await removeFavorite({ tmdbId, mediaType }).unwrap();
-      } catch (error) {
-        console.error("Failed to remove favorite:", error);
-      } finally {
-        setDeletingIds((prev) => {
-          const next = new Set(prev);
-          next.delete(tmdbId);
-          return next;
-        });
-      }
-    }, 300);
+    try {
+      await removeFavorite({ tmdbId, mediaType }).unwrap();
+    } catch (error) {
+      console.error("Failed to remove favorite:", error);
+      // Remove from deleting state on error so item reappears
+      setDeletingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(tmdbId);
+        return next;
+      });
+    }
   };
 
   const renderFavouriteCard = ({
@@ -214,7 +212,10 @@ export default function FavouritesScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={["top"]}
+    >
       <FlatList
         data={favouritesList}
         keyExtractor={(item) => item.tmdbId.toString()}
@@ -226,7 +227,7 @@ export default function FavouritesScreen() {
         ListEmptyComponent={EmptyState}
         showsVerticalScrollIndicator={false}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -12,6 +12,7 @@ import {
   Animated,
   FlatList,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRoute, useNavigation } from "@react-navigation/native";
@@ -178,346 +179,354 @@ export default function TVDetailsScreen() {
   };
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      showsVerticalScrollIndicator={false}
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      edges={["top"]}
     >
-      {/* Header */}
-      <View
-        style={[
-          styles.headerContainer,
-          {
-            backgroundColor: colors.background,
-            borderBottomColor: colors.border,
-          },
-        ]}
-      >
-        <TouchableOpacity onPress={handleGoBack} style={styles.backIconButton}>
-          <Feather name="arrow-left" size={24} color={colors.primary} />
-        </TouchableOpacity>
-        <Text
-          style={[styles.headerTitle, { color: colors.text }]}
-          numberOfLines={1}
-        >
-          {show.name}
-        </Text>
-        <Animated.View
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View
           style={[
-            styles.favouriteButton,
-            { transform: [{ scale: heartScale }] },
+            styles.headerContainer,
+            {
+              backgroundColor: colors.background,
+              borderBottomColor: colors.border,
+            },
           ]}
         >
-          <TouchableOpacity onPress={handleFavouritePress}>
-            <Feather
-              name="heart"
-              size={24}
-              color={isFavourite ? colors.error : colors.primary}
-              fill={isFavourite ? colors.error : "none"}
-            />
+          <TouchableOpacity
+            onPress={handleGoBack}
+            style={styles.backIconButton}
+          >
+            <Feather name="arrow-left" size={24} color={colors.primary} />
           </TouchableOpacity>
-        </Animated.View>
-      </View>
-
-      {/* Backdrop Image */}
-      {backdropImageUrl ? (
-        <View style={styles.backdropContainer}>
-          <Image
-            source={{ uri: backdropImageUrl }}
-            style={[styles.backdropImage, { backgroundColor: colors.card }]}
-            resizeMode="cover"
-          />
-          <View
+          <Text
+            style={[styles.headerTitle, { color: colors.text }]}
+            numberOfLines={1}
+          >
+            {show.name}
+          </Text>
+          <Animated.View
             style={[
-              styles.backdropOverlay,
-              { backgroundColor: `rgba(15, 23, 42, 0.3)` },
+              styles.favouriteButton,
+              { transform: [{ scale: heartScale }] },
             ]}
-          />
+          >
+            <TouchableOpacity onPress={handleFavouritePress}>
+              <Feather
+                name="heart"
+                size={24}
+                color={isFavourite ? colors.error : colors.primary}
+                fill={isFavourite ? colors.error : "none"}
+              />
+            </TouchableOpacity>
+          </Animated.View>
         </View>
-      ) : null}
 
-      {/* Main Content */}
-      <View style={styles.contentContainer}>
-        {/* Poster & Key Info */}
-        <View style={styles.posterSection}>
-          {posterImageUrl ? (
+        {/* Backdrop Image */}
+        {backdropImageUrl ? (
+          <View style={styles.backdropContainer}>
             <Image
-              source={{ uri: posterImageUrl }}
+              source={{ uri: backdropImageUrl }}
+              style={[styles.backdropImage, { backgroundColor: colors.card }]}
+              resizeMode="cover"
+            />
+            <View
               style={[
-                styles.posterImage,
+                styles.backdropOverlay,
+                { backgroundColor: `rgba(15, 23, 42, 0.3)` },
+              ]}
+            />
+          </View>
+        ) : null}
+
+        {/* Main Content */}
+        <View style={styles.contentContainer}>
+          {/* Poster & Key Info */}
+          <View style={styles.posterSection}>
+            {posterImageUrl ? (
+              <Image
+                source={{ uri: posterImageUrl }}
+                style={[
+                  styles.posterImage,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+                resizeMode="cover"
+              />
+            ) : null}
+            <View style={styles.keyInfo}>
+              {/* Rating */}
+              <LinearGradient
+                colors={[`${colors.primary}20`, `${colors.accent}20`]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[
+                  styles.ratingContainer,
+                  {
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Feather name="star" size={18} color={colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.ratingText, { color: colors.text }]}>
+                    {show.vote_average?.toFixed(1) || "N/A"}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.ratingCount,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    ({show.vote_count?.toLocaleString() || 0})
+                  </Text>
+                </View>
+              </LinearGradient>
+
+              {/* First Air Date */}
+              <View
+                style={[
+                  styles.metaBox,
+                  {
+                    backgroundColor: `${colors.primary}10`,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Feather name="calendar" size={16} color={colors.info} />
+                <Text style={[styles.metaText, { color: colors.text }]}>
+                  {firstAirYear}
+                </Text>
+              </View>
+
+              {/* Seasons & Episodes */}
+              <View
+                style={[
+                  styles.metaBox,
+                  {
+                    backgroundColor: `${colors.primary}10`,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Feather name="tv" size={16} color={colors.info} />
+                <Text style={[styles.metaText, { color: colors.text }]}>
+                  {show.number_of_seasons} S • {show.number_of_episodes} E
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Title & Tagline */}
+          <View style={styles.titleSection}>
+            <Text style={[styles.title, { color: colors.text }]}>
+              {show.name}
+            </Text>
+            {show.tagline ? (
+              <Text style={[styles.tagline, { color: colors.textLight }]}>
+                "{show.tagline}"
+              </Text>
+            ) : null}
+          </View>
+
+          {/* Genres */}
+          {genreString !== "N/A" ? (
+            <View style={styles.genresSection}>
+              <Text style={[styles.genreText, { color: colors.text }]}>
+                {genreString}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Stats Grid */}
+          <View style={styles.statsGrid}>
+            <View
+              style={[
+                styles.statBox,
                 {
                   backgroundColor: colors.card,
                   borderColor: colors.border,
                 },
               ]}
-              resizeMode="cover"
-            />
-          ) : null}
-          <View style={styles.keyInfo}>
-            {/* Rating */}
-            <LinearGradient
-              colors={[`${colors.primary}20`, `${colors.accent}20`]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={[
-                styles.ratingContainer,
-                {
-                  borderColor: colors.border,
-                },
-              ]}
             >
-              <Feather name="star" size={18} color={colors.primary} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.ratingText, { color: colors.text }]}>
-                  {show.vote_average?.toFixed(1) || "N/A"}
-                </Text>
-                <Text
-                  style={[styles.ratingCount, { color: colors.textSecondary }]}
-                >
-                  ({show.vote_count?.toLocaleString() || 0})
-                </Text>
-              </View>
-            </LinearGradient>
-
-            {/* First Air Date */}
-            <View
-              style={[
-                styles.metaBox,
-                {
-                  backgroundColor: `${colors.primary}10`,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              <Feather name="calendar" size={16} color={colors.info} />
-              <Text style={[styles.metaText, { color: colors.text }]}>
-                {firstAirYear}
+              <Feather name="layers" size={20} color={colors.primary} />
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                Seasons
+              </Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>
+                {show.number_of_seasons || 0}
               </Text>
             </View>
 
-            {/* Seasons & Episodes */}
             <View
               style={[
-                styles.metaBox,
+                styles.statBox,
                 {
-                  backgroundColor: `${colors.primary}10`,
+                  backgroundColor: colors.card,
                   borderColor: colors.border,
                 },
               ]}
             >
-              <Feather name="tv" size={16} color={colors.info} />
-              <Text style={[styles.metaText, { color: colors.text }]}>
-                {show.number_of_seasons} S • {show.number_of_episodes} E
+              <Feather name="film" size={20} color={colors.success} />
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                Episodes
+              </Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>
+                {show.number_of_episodes || 0}
+              </Text>
+            </View>
+
+            <View
+              style={[
+                styles.statBox,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Feather name="zap" size={20} color={colors.warning} />
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                Popularity
+              </Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>
+                {show.popularity?.toFixed(0) || "N/A"}
               </Text>
             </View>
           </View>
-        </View>
 
-        {/* Title & Tagline */}
-        <View style={styles.titleSection}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            {show.name}
-          </Text>
-          {show.tagline ? (
-            <Text style={[styles.tagline, { color: colors.textLight }]}>
-              "{show.tagline}"
-            </Text>
-          ) : null}
-        </View>
-
-        {/* Genres */}
-        {genreString !== "N/A" ? (
-          <View style={styles.genresSection}>
-            <Text style={[styles.genreText, { color: colors.text }]}>
-              {genreString}
-            </Text>
-          </View>
-        ) : null}
-
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          <View
-            style={[
-              styles.statBox,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <Feather name="layers" size={20} color={colors.primary} />
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-              Seasons
-            </Text>
-            <Text style={[styles.statValue, { color: colors.text }]}>
-              {show.number_of_seasons || 0}
-            </Text>
-          </View>
-
-          <View
-            style={[
-              styles.statBox,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <Feather name="film" size={20} color={colors.success} />
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-              Episodes
-            </Text>
-            <Text style={[styles.statValue, { color: colors.text }]}>
-              {show.number_of_episodes || 0}
-            </Text>
-          </View>
-
-          <View
-            style={[
-              styles.statBox,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <Feather name="zap" size={20} color={colors.warning} />
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-              Popularity
-            </Text>
-            <Text style={[styles.statValue, { color: colors.text }]}>
-              {show.popularity?.toFixed(0) || "N/A"}
-            </Text>
-          </View>
-        </View>
-
-        {/* Status */}
-        {show.status ? (
-          <View
-            style={[
-              styles.statusBadge,
-              {
-                backgroundColor:
-                  show.status === "Returning Series"
-                    ? `${colors.success}20`
-                    : `${colors.warning}20`,
-                borderColor:
-                  show.status === "Returning Series"
-                    ? colors.success
-                    : colors.warning,
-              },
-            ]}
-          >
-            <Feather
-              name="info"
-              size={16}
-              color={
-                show.status === "Returning Series"
-                  ? colors.success
-                  : colors.warning
-              }
-            />
-            <Text
+          {/* Status */}
+          {show.status ? (
+            <View
               style={[
-                styles.statusText,
+                styles.statusBadge,
                 {
-                  color:
+                  backgroundColor:
+                    show.status === "Returning Series"
+                      ? `${colors.success}20`
+                      : `${colors.warning}20`,
+                  borderColor:
                     show.status === "Returning Series"
                       ? colors.success
                       : colors.warning,
                 },
               ]}
             >
-              {show.status}
-            </Text>
-          </View>
-        ) : null}
-
-        {/* Overview */}
-        {show.overview ? (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Synopsis
-            </Text>
-            <Text
-              style={[styles.overviewText, { color: colors.textSecondary }]}
-            >
-              {show.overview}
-            </Text>
-          </View>
-        ) : null}
-
-        {/* Seasons */}
-        {show.seasons && show.seasons.length > 0 ? (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Seasons ({show.seasons.length})
-            </Text>
-            <FlatList
-              data={show.seasons}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={renderSeason}
-              contentContainerStyle={styles.seasonsList}
-            />
-          </View>
-        ) : null}
-
-        {/* Networks */}
-        {show.networks && show.networks.length > 0 ? (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Network
-            </Text>
-            <View style={styles.networkList}>
-              {show.networks.slice(0, 3).map((network: any) => (
-                <View
-                  key={network.id}
-                  style={[
-                    styles.networkItem,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <Feather name="tv" size={16} color={colors.primary} />
-                  <Text style={[styles.networkName, { color: colors.text }]}>
-                    {network.name}
-                  </Text>
-                </View>
-              ))}
+              <Feather
+                name="info"
+                size={16}
+                color={
+                  show.status === "Returning Series"
+                    ? colors.success
+                    : colors.warning
+                }
+              />
+              <Text
+                style={[
+                  styles.statusText,
+                  {
+                    color:
+                      show.status === "Returning Series"
+                        ? colors.success
+                        : colors.warning,
+                  },
+                ]}
+              >
+                {show.status}
+              </Text>
             </View>
-          </View>
-        ) : null}
+          ) : null}
 
-        {/* Add to Favorites CTA */}
-        <TouchableOpacity onPress={handleFavouritePress} activeOpacity={0.85}>
-          <LinearGradient
-            colors={
-              isFavourite
-                ? [colors.error, "#DC2626"]
-                : [colors.primary, colors.accent]
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.favouriteCTA}
-          >
-            <Feather
-              name="heart"
-              size={20}
-              color="#FFFFFF"
-              fill={isFavourite ? "#FFFFFF" : "none"}
-            />
-            <Text style={styles.favouriteCTAText}>
-              {isFavourite ? "Remove from Favorites" : "Add to Favorites"}
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
+          {/* Overview */}
+          {show.overview ? (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Synopsis
+              </Text>
+              <Text
+                style={[styles.overviewText, { color: colors.textSecondary }]}
+              >
+                {show.overview}
+              </Text>
+            </View>
+          ) : null}
 
-        <View style={styles.bottomPadding} />
-      </View>
-    </ScrollView>
+          {/* Seasons */}
+          {show.seasons && show.seasons.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Seasons ({show.seasons.length})
+              </Text>
+              <FlatList
+                data={show.seasons}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderSeason}
+                contentContainerStyle={styles.seasonsList}
+              />
+            </View>
+          ) : null}
+
+          {/* Networks */}
+          {show.networks && show.networks.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Network
+              </Text>
+              <View style={styles.networkList}>
+                {show.networks.slice(0, 3).map((network: any) => (
+                  <View
+                    key={network.id}
+                    style={[
+                      styles.networkItem,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Feather name="tv" size={16} color={colors.primary} />
+                    <Text style={[styles.networkName, { color: colors.text }]}>
+                      {network.name}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+
+          {/* Add to Favorites CTA */}
+          <TouchableOpacity onPress={handleFavouritePress} activeOpacity={0.85}>
+            <LinearGradient
+              colors={
+                isFavourite
+                  ? [colors.error, "#DC2626"]
+                  : [colors.primary, colors.accent]
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.favouriteCTA}
+            >
+              <Feather
+                name="heart"
+                size={20}
+                color="#FFFFFF"
+                fill={isFavourite ? "#FFFFFF" : "none"}
+              />
+              <Text style={styles.favouriteCTAText}>
+                {isFavourite ? "Remove from Favorites" : "Add to Favorites"}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <View style={styles.bottomPadding} />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 

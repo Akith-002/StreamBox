@@ -11,6 +11,7 @@ import {
   Alert,
   Animated,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRoute, useNavigation } from "@react-navigation/native";
@@ -136,124 +137,114 @@ export default function DetailsScreen() {
     : "N/A";
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      showsVerticalScrollIndicator={false}
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      edges={["top"]}
     >
-      {/* Header */}
-      <View
-        style={[
-          styles.headerContainer,
-          {
-            backgroundColor: colors.background,
-            borderBottomColor: colors.border,
-          },
-        ]}
-      >
-        <TouchableOpacity onPress={handleGoBack} style={styles.backIconButton}>
-          <Feather name="arrow-left" size={24} color={colors.primary} />
-        </TouchableOpacity>
-        <Text
-          style={[styles.headerTitle, { color: colors.text }]}
-          numberOfLines={1}
-        >
-          {movie.title}
-        </Text>
-        <Animated.View
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View
           style={[
-            styles.favouriteButton,
-            { transform: [{ scale: heartScale }] },
+            styles.headerContainer,
+            {
+              backgroundColor: colors.background,
+              borderBottomColor: colors.border,
+            },
           ]}
         >
-          <TouchableOpacity onPress={handleFavouritePress}>
-            <Feather
-              name="heart"
-              size={24}
-              color={isFavourite ? colors.error : colors.primary}
-              fill={isFavourite ? colors.error : "none"}
-            />
+          <TouchableOpacity
+            onPress={handleGoBack}
+            style={styles.backIconButton}
+          >
+            <Feather name="arrow-left" size={24} color={colors.primary} />
           </TouchableOpacity>
-        </Animated.View>
-      </View>
-
-      {/* Backdrop Image */}
-      {backdropImageUrl ? (
-        <View style={styles.backdropContainer}>
-          <Image
-            source={{ uri: backdropImageUrl }}
-            style={[styles.backdropImage, { backgroundColor: colors.card }]}
-            resizeMode="cover"
-          />
-          <View
+          <Text
+            style={[styles.headerTitle, { color: colors.text }]}
+            numberOfLines={1}
+          >
+            {movie.title}
+          </Text>
+          <Animated.View
             style={[
-              styles.backdropOverlay,
-              { backgroundColor: `rgba(15, 23, 42, 0.3)` },
+              styles.favouriteButton,
+              { transform: [{ scale: heartScale }] },
             ]}
-          />
+          >
+            <TouchableOpacity onPress={handleFavouritePress}>
+              <Feather
+                name="heart"
+                size={24}
+                color={isFavourite ? colors.error : colors.primary}
+                fill={isFavourite ? colors.error : "none"}
+              />
+            </TouchableOpacity>
+          </Animated.View>
         </View>
-      ) : null}
 
-      {/* Main Content */}
-      <View style={styles.contentContainer}>
-        {/* Poster & Key Info */}
-        <View style={styles.posterSection}>
-          {posterImageUrl ? (
+        {/* Backdrop Image */}
+        {backdropImageUrl ? (
+          <View style={styles.backdropContainer}>
             <Image
-              source={{ uri: posterImageUrl }}
-              style={[
-                styles.posterImage,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                },
-              ]}
+              source={{ uri: backdropImageUrl }}
+              style={[styles.backdropImage, { backgroundColor: colors.card }]}
               resizeMode="cover"
             />
-          ) : null}
-          <View style={styles.keyInfo}>
-            {/* Rating */}
-            <LinearGradient
-              colors={[`${colors.primary}20`, `${colors.accent}20`]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={[
-                styles.ratingContainer,
-                {
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              <Feather name="star" size={18} color={colors.primary} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.ratingText, { color: colors.text }]}>
-                  {movie.vote_average?.toFixed(1) || "N/A"}
-                </Text>
-                <Text
-                  style={[styles.ratingCount, { color: colors.textSecondary }]}
-                >
-                  ({movie.vote_count?.toLocaleString() || 0})
-                </Text>
-              </View>
-            </LinearGradient>
-
-            {/* Year */}
             <View
               style={[
-                styles.metaBox,
-                {
-                  backgroundColor: `${colors.primary}10`,
-                  borderColor: colors.border,
-                },
+                styles.backdropOverlay,
+                { backgroundColor: `rgba(15, 23, 42, 0.3)` },
               ]}
-            >
-              <Feather name="calendar" size={16} color={colors.info} />
-              <Text style={[styles.metaText, { color: colors.text }]}>
-                {releaseYear}
-              </Text>
-            </View>
+            />
+          </View>
+        ) : null}
 
-            {/* Runtime */}
-            {movie.runtime ? (
+        {/* Main Content */}
+        <View style={styles.contentContainer}>
+          {/* Poster & Key Info */}
+          <View style={styles.posterSection}>
+            {posterImageUrl ? (
+              <Image
+                source={{ uri: posterImageUrl }}
+                style={[
+                  styles.posterImage,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+                resizeMode="cover"
+              />
+            ) : null}
+            <View style={styles.keyInfo}>
+              {/* Rating */}
+              <LinearGradient
+                colors={[`${colors.primary}20`, `${colors.accent}20`]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[
+                  styles.ratingContainer,
+                  {
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Feather name="star" size={18} color={colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.ratingText, { color: colors.text }]}>
+                    {movie.vote_average?.toFixed(1) || "N/A"}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.ratingCount,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    ({movie.vote_count?.toLocaleString() || 0})
+                  </Text>
+                </View>
+              </LinearGradient>
+
+              {/* Year */}
               <View
                 style={[
                   styles.metaBox,
@@ -263,166 +254,193 @@ export default function DetailsScreen() {
                   },
                 ]}
               >
-                <Feather name="clock" size={16} color={colors.info} />
+                <Feather name="calendar" size={16} color={colors.info} />
                 <Text style={[styles.metaText, { color: colors.text }]}>
-                  {movie.runtime} min
+                  {releaseYear}
                 </Text>
               </View>
-            ) : null}
-          </View>
-        </View>
 
-        {/* Title & Tagline */}
-        <View style={styles.titleSection}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            {movie.title}
-          </Text>
-          {movie.tagline ? (
-            <Text style={[styles.tagline, { color: colors.textLight }]}>
-              "{movie.tagline}"
-            </Text>
-          ) : null}
-        </View>
-
-        {/* Genres */}
-        {genreString !== "N/A" ? (
-          <View style={styles.genresSection}>
-            <Text style={[styles.genreText, { color: colors.text }]}>
-              {genreString}
-            </Text>
-          </View>
-        ) : null}
-
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          {movie.budget && movie.budget > 0 ? (
-            <View
-              style={[
-                styles.statBox,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              <Feather name="dollar-sign" size={20} color={colors.primary} />
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                Budget
-              </Text>
-              <Text style={[styles.statValue, { color: colors.text }]}>
-                ${(movie.budget / 1000000).toFixed(1)}M
-              </Text>
-            </View>
-          ) : null}
-
-          {movie.revenue && movie.revenue > 0 ? (
-            <View
-              style={[
-                styles.statBox,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              <Feather name="trending-up" size={20} color={colors.success} />
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                Revenue
-              </Text>
-              <Text style={[styles.statValue, { color: colors.text }]}>
-                ${(movie.revenue / 1000000).toFixed(1)}M
-              </Text>
-            </View>
-          ) : null}
-
-          <View
-            style={[
-              styles.statBox,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <Feather name="zap" size={20} color={colors.warning} />
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-              Popularity
-            </Text>
-            <Text style={[styles.statValue, { color: colors.text }]}>
-              {movie.popularity?.toFixed(0) || "N/A"}
-            </Text>
-          </View>
-        </View>
-
-        {/* Overview */}
-        {movie.overview ? (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Synopsis
-            </Text>
-            <Text
-              style={[styles.overviewText, { color: colors.textSecondary }]}
-            >
-              {movie.overview}
-            </Text>
-          </View>
-        ) : null}
-
-        {/* Production Companies */}
-        {movie.production_companies && movie.production_companies.length > 0 ? (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Production
-            </Text>
-            <View style={styles.companyList}>
-              {movie.production_companies.slice(0, 3).map((company: any) => (
+              {/* Runtime */}
+              {movie.runtime ? (
                 <View
-                  key={company.id}
                   style={[
-                    styles.companyItem,
+                    styles.metaBox,
                     {
-                      backgroundColor: colors.card,
+                      backgroundColor: `${colors.primary}10`,
                       borderColor: colors.border,
                     },
                   ]}
                 >
-                  <Feather name="briefcase" size={16} color={colors.primary} />
-                  <Text style={[styles.companyName, { color: colors.text }]}>
-                    {company.name}
+                  <Feather name="clock" size={16} color={colors.info} />
+                  <Text style={[styles.metaText, { color: colors.text }]}>
+                    {movie.runtime} min
                   </Text>
                 </View>
-              ))}
+              ) : null}
             </View>
           </View>
-        ) : null}
 
-        {/* Add to Favorites CTA */}
-        <TouchableOpacity onPress={handleFavouritePress} activeOpacity={0.85}>
-          <LinearGradient
-            colors={
-              isFavourite
-                ? [colors.error, "#DC2626"]
-                : [colors.primary, colors.accent]
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.favouriteCTA}
-          >
-            <Feather
-              name="heart"
-              size={20}
-              color="#FFFFFF"
-              fill={isFavourite ? "#FFFFFF" : "none"}
-            />
-            <Text style={styles.favouriteCTAText}>
-              {isFavourite ? "Remove from Favorites" : "Add to Favorites"}
+          {/* Title & Tagline */}
+          <View style={styles.titleSection}>
+            <Text style={[styles.title, { color: colors.text }]}>
+              {movie.title}
             </Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            {movie.tagline ? (
+              <Text style={[styles.tagline, { color: colors.textLight }]}>
+                "{movie.tagline}"
+              </Text>
+            ) : null}
+          </View>
 
-        <View style={styles.bottomPadding} />
-      </View>
-    </ScrollView>
+          {/* Genres */}
+          {genreString !== "N/A" ? (
+            <View style={styles.genresSection}>
+              <Text style={[styles.genreText, { color: colors.text }]}>
+                {genreString}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Stats Grid */}
+          <View style={styles.statsGrid}>
+            {movie.budget && movie.budget > 0 ? (
+              <View
+                style={[
+                  styles.statBox,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Feather name="dollar-sign" size={20} color={colors.primary} />
+                <Text
+                  style={[styles.statLabel, { color: colors.textSecondary }]}
+                >
+                  Budget
+                </Text>
+                <Text style={[styles.statValue, { color: colors.text }]}>
+                  ${(movie.budget / 1000000).toFixed(1)}M
+                </Text>
+              </View>
+            ) : null}
+
+            {movie.revenue && movie.revenue > 0 ? (
+              <View
+                style={[
+                  styles.statBox,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Feather name="trending-up" size={20} color={colors.success} />
+                <Text
+                  style={[styles.statLabel, { color: colors.textSecondary }]}
+                >
+                  Revenue
+                </Text>
+                <Text style={[styles.statValue, { color: colors.text }]}>
+                  ${(movie.revenue / 1000000).toFixed(1)}M
+                </Text>
+              </View>
+            ) : null}
+
+            <View
+              style={[
+                styles.statBox,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Feather name="zap" size={20} color={colors.warning} />
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                Popularity
+              </Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>
+                {movie.popularity?.toFixed(0) || "N/A"}
+              </Text>
+            </View>
+          </View>
+
+          {/* Overview */}
+          {movie.overview ? (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Synopsis
+              </Text>
+              <Text
+                style={[styles.overviewText, { color: colors.textSecondary }]}
+              >
+                {movie.overview}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Production Companies */}
+          {movie.production_companies &&
+          movie.production_companies.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Production
+              </Text>
+              <View style={styles.companyList}>
+                {movie.production_companies.slice(0, 3).map((company: any) => (
+                  <View
+                    key={company.id}
+                    style={[
+                      styles.companyItem,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Feather
+                      name="briefcase"
+                      size={16}
+                      color={colors.primary}
+                    />
+                    <Text style={[styles.companyName, { color: colors.text }]}>
+                      {company.name}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+
+          {/* Add to Favorites CTA */}
+          <TouchableOpacity onPress={handleFavouritePress} activeOpacity={0.85}>
+            <LinearGradient
+              colors={
+                isFavourite
+                  ? [colors.error, "#DC2626"]
+                  : [colors.primary, colors.accent]
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.favouriteCTA}
+            >
+              <Feather
+                name="heart"
+                size={20}
+                color="#FFFFFF"
+                fill={isFavourite ? "#FFFFFF" : "none"}
+              />
+              <Text style={styles.favouriteCTAText}>
+                {isFavourite ? "Remove from Favorites" : "Add to Favorites"}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <View style={styles.bottomPadding} />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 

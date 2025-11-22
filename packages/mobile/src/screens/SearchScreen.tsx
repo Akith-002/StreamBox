@@ -8,7 +8,10 @@ import {
   TouchableOpacity,
   TextInput,
   Image,
+  ScrollView,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -63,8 +66,6 @@ export default function SearchScreen() {
       if (trimmedQuery.length < 2) return;
 
       let updatedHistory = [trimmedQuery];
-
-      // Remove duplicates and add to front
       const filtered = searchHistory.filter(
         (item) => item.toLowerCase() !== trimmedQuery.toLowerCase()
       );
@@ -108,11 +109,8 @@ export default function SearchScreen() {
         setDebouncedQuery("");
         return;
       }
-
       try {
         setDebouncedQuery(query);
-
-        // Save to history after successful search
         if (addToHistory) {
           await saveToHistory(query);
         }
@@ -125,18 +123,14 @@ export default function SearchScreen() {
 
   const handleHistoryItemPress = (query: string) => {
     setSearchQuery(query);
-    handleSearch(query, true); // Add to history (moves to top)
+    handleSearch(query, true);
   };
 
   const handleInputChange = (text: string) => {
     setSearchQuery(text);
-
-    // Clear previous timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-
-    // Set new timeout for debounced search (without saving to history)
     searchTimeoutRef.current = setTimeout(() => {
       handleSearch(text, false);
     }, 500);
@@ -144,101 +138,121 @@ export default function SearchScreen() {
 
   const handleSubmitSearch = () => {
     if (searchQuery.trim().length >= 2) {
-      // Clear timeout to prevent duplicate search
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
-      // Search and save to history
       handleSearch(searchQuery, true);
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, []);
-
   const handleItemPress = (item: MovieDto) => {
-    // Save current search query to history when user taps a result
     if (searchQuery.trim().length >= 2) {
       saveToHistory(searchQuery);
     }
-
     navigation.navigate("HomeTab", {
       screen: "Details",
       params: { movieId: item.id },
     });
   };
 
+  // --- Render Items ---
+
   const renderSearchResult = ({ item }: { item: MovieDto }) => {
     const title = item.title;
-    const subtitle = item.release_date
-      ? `Movie • ${item.release_date.slice(0, 4)}`
-      : "Movie";
+    const year = item.release_date ? item.release_date.slice(0, 4) : "N/A";
     const imageUri = item.poster_path
       ? `${TMDB_IMAGE_BASE_URL}${item.poster_path}`
       : "";
-    const icon = "film";
 
     return (
       <TouchableOpacity
-        style={[
-          styles.resultItem,
-          { backgroundColor: colors.card, borderColor: colors.border },
-        ]}
+        style={[styles.resultItem, { backgroundColor: "transparent" }]} // Transparent to look cleaner
         onPress={() => handleItemPress(item)}
         activeOpacity={0.7}
       >
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.resultImage} />
-        ) : (
-          <LinearGradient
-            colors={[`${colors.primary}30`, `${colors.accent}30`]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.resultImage}
-          >
-            <Feather name={icon as any} size={24} color={colors.textLight} />
-          </LinearGradient>
-        )}
+        <View style={styles.posterWrapper}>
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={styles.resultImage} />
+          ) : (
+            <View
+              style={[styles.resultImage, { backgroundColor: colors.card }]}
+            >
+              <Feather name="film" size={20} color={colors.textLight} />
+            </View>
+          )}
+        </View>
+
         <View style={styles.resultInfo}>
           <Text
             style={[styles.resultTitle, { color: colors.text }]}
-            numberOfLines={2}
+            numberOfLines={1}
           >
             {title}
           </Text>
-          <Text style={[styles.resultSubtitle, { color: colors.textLight }]}>
-            {subtitle}
-          </Text>
-          <View style={styles.resultMeta}>
-            <Feather name="star" size={12} color="#FFD700" />
-            <Text style={[styles.resultRating, { color: colors.text }]}>
-              {item.vote_average.toFixed(1)}
+          <View style={styles.resultMetaRow}>
+            <Text
+              style={[styles.resultSubtitle, { color: colors.textSecondary }]}
+            >
+              Movie • {year}
             </Text>
+            <View style={styles.ratingBadge}>
+              <Feather name="star" size={10} color={colors.primary} />
+              <Text style={[styles.ratingText, { color: colors.primary }]}>
+                {item.vote_average.toFixed(1)}
+              </Text>
+            </View>
           </View>
         </View>
-        <Feather name="chevron-right" size={20} color={colors.textLight} />
+        <Feather
+          name="arrow-up-left"
+          size={18}
+          color={colors.textLight}
+          style={{ opacity: 0.5 }}
+        />
       </TouchableOpacity>
     );
   };
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Search Bar */}
-      <View
-        style={[
-          styles.searchContainer,
-          { backgroundColor: colors.card, borderColor: colors.border },
-        ]}
+  const renderHistoryItem = ({ item }: { item: string }) => (
+    <TouchableOpacity
+      style={[styles.historyRow, { borderBottomColor: colors.border }]}
+      onPress={() => handleHistoryItemPress(item)}
+      activeOpacity={0.7}
+    >
+      <Feather name="clock" size={16} color={colors.textLight} />
+      <Text style={[styles.historyText, { color: colors.textSecondary }]}>
+        {item}
+      </Text>
+      <TouchableOpacity
+        onPress={(e) => {
+          e.stopPropagation(); // Prevent triggering search
+          removeHistoryItem(item);
+        }}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Feather name="search" size={20} color={colors.textLight} />
+        <Feather name="x" size={16} color={colors.textLight} />
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+
+  return (
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={["top"]}
+    >
+      <StatusBar barStyle="light-content" />
+
+      {/* Header Title */}
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Search</Text>
+      </View>
+
+      {/* Modern Search Bar */}
+      <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
+        <Feather name="search" size={18} color={colors.textLight} />
         <TextInput
           style={[styles.searchInput, { color: colors.text }]}
-          placeholder="Search movies, TV shows, people..."
+          placeholder="Movies, shows, people..."
           placeholderTextColor={colors.textLight}
           value={searchQuery}
           onChangeText={handleInputChange}
@@ -254,107 +268,77 @@ export default function SearchScreen() {
               setDebouncedQuery("");
             }}
           >
-            <Feather name="x-circle" size={20} color={colors.textLight} />
+            <View
+              style={[styles.clearBtn, { backgroundColor: colors.textLight }]}
+            >
+              <Feather name="x" size={12} color={colors.card} />
+            </View>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Results */}
-      {isLoading || isFetching ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.textLight }]}>
-            Searching...
-          </Text>
-        </View>
-      ) : searchResults.length > 0 ? (
-        <FlatList
-          data={searchResults}
-          keyExtractor={(item, index) => `${item.id}-${index}`}
-          renderItem={renderSearchResult}
-          contentContainerStyle={styles.resultsList}
-          showsVerticalScrollIndicator={false}
-        />
-      ) : searchQuery.length >= 2 ? (
-        <View style={styles.centered}>
-          <Feather name="search" size={64} color={colors.textLight} />
-          <Text style={[styles.emptyText, { color: colors.text }]}>
-            No results found
-          </Text>
-          <Text style={[styles.emptySubtext, { color: colors.textLight }]}>
-            Try different keywords
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.historyContainer}>
-          {searchHistory.length > 0 ? (
-            <>
-              <View style={styles.historyHeader}>
-                <Text style={[styles.historyTitle, { color: colors.text }]}>
-                  Recent Searches
-                </Text>
-                <TouchableOpacity onPress={clearHistory}>
-                  <Text style={[styles.clearText, { color: colors.primary }]}>
-                    Clear All
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              <FlatList
-                data={searchHistory}
-                keyExtractor={(item, index) => `${item}-${index}`}
-                renderItem={({ item }) => (
-                  <View
-                    style={[
-                      styles.historyItem,
-                      {
-                        backgroundColor: colors.card,
-                        borderColor: colors.border,
-                      },
-                    ]}
-                  >
-                    <TouchableOpacity
-                      style={styles.historyItemContent}
-                      onPress={() => handleHistoryItemPress(item)}
-                      activeOpacity={0.7}
-                    >
-                      <Feather
-                        name="clock"
-                        size={18}
-                        color={colors.textLight}
-                      />
-                      <Text
-                        style={[styles.historyText, { color: colors.text }]}
-                        numberOfLines={1}
-                      >
-                        {item}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => removeHistoryItem(item)}
-                      style={styles.historyDelete}
-                    >
-                      <Feather name="x" size={18} color={colors.textLight} />
-                    </TouchableOpacity>
-                  </View>
-                )}
-                contentContainerStyle={styles.historyList}
-                showsVerticalScrollIndicator={false}
-              />
-            </>
-          ) : (
-            <View style={styles.centered}>
-              <Feather name="search" size={64} color={colors.textLight} />
-              <Text style={[styles.emptyText, { color: colors.text }]}>
-                Start searching
-              </Text>
-              <Text style={[styles.emptySubtext, { color: colors.textLight }]}>
-                Search for movies, TV shows, and people
-              </Text>
+      {/* Main Content */}
+      <View style={{ flex: 1 }}>
+        {isLoading || isFetching ? (
+          <View style={styles.centered}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : debouncedQuery && searchResults.length > 0 ? (
+          <FlatList
+            data={searchResults}
+            keyExtractor={(item, index) => `${item.id}-${index}`}
+            renderItem={renderSearchResult}
+            contentContainerStyle={styles.resultsList}
+            showsVerticalScrollIndicator={false}
+            keyboardDismissMode="on-drag"
+          />
+        ) : debouncedQuery && searchQuery.length >= 2 ? (
+          <View style={styles.centered}>
+            <View style={[styles.emptyIcon, { backgroundColor: colors.card }]}>
+              <Feather name="search" size={40} color={colors.textLight} />
             </View>
-          )}
-        </View>
-      )}
-    </View>
+            <Text style={[styles.emptyText, { color: colors.text }]}>
+              No results found
+            </Text>
+            <Text
+              style={[styles.emptySubtext, { color: colors.textSecondary }]}
+            >
+              Check spelling or try a different keyword
+            </Text>
+          </View>
+        ) : (
+          <ScrollView
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* History Section */}
+            {searchHistory.length > 0 && (
+              <View style={styles.sectionContainer}>
+                <View style={styles.sectionHeader}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                    Recent
+                  </Text>
+                  <TouchableOpacity onPress={clearHistory}>
+                    <Text
+                      style={[styles.clearAllText, { color: colors.primary }]}
+                    >
+                      Clear
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                <View>
+                  {searchHistory.map((item, index) => (
+                    <View key={`${item}-${index}`}>
+                      {renderHistoryItem({ item })}
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </ScrollView>
+        )}
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -362,21 +346,38 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  header: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+    paddingTop: spacing.sm,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+  },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    margin: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    ...shadows.small,
-    gap: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    paddingHorizontal: 16,
+    height: 50, // Fixed height for pill shape
+    borderRadius: 25, // Fully rounded
+    gap: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: fontSizes.md,
-    padding: 0,
+    fontWeight: "500",
+    height: "100%",
+  },
+  clearBtn: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: "center",
+    alignItems: "center",
   },
   centered: {
     flex: 1,
@@ -384,105 +385,124 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: spacing.lg,
   },
-  loadingText: {
-    marginTop: spacing.md,
-    fontSize: fontSizes.md,
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: spacing.md,
   },
   emptyText: {
-    marginTop: spacing.lg,
-    fontSize: fontSizes.xl,
-    fontWeight: "bold",
+    fontSize: fontSizes.lg,
+    fontWeight: "600",
   },
   emptySubtext: {
-    marginTop: spacing.sm,
+    marginTop: 4,
     fontSize: fontSizes.md,
     textAlign: "center",
   },
+
+  // List Styles
   resultsList: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
   },
   resultItem: {
     flexDirection: "row",
     alignItems: "center",
-    padding: spacing.md,
-    borderRadius: borderRadius.lg,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    ...shadows.small,
+    marginBottom: spacing.lg,
     gap: spacing.md,
   },
+  posterWrapper: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   resultImage: {
-    width: 60,
-    height: 90,
-    borderRadius: borderRadius.md,
-    justifyContent: "center",
-    alignItems: "center",
+    width: 48,
+    height: 72,
+    borderRadius: 6,
+    resizeMode: "cover",
   },
   resultInfo: {
     flex: 1,
-    gap: spacing.xs,
+    justifyContent: "center",
+    gap: 4,
   },
   resultTitle: {
     fontSize: fontSizes.md,
-    fontWeight: "700",
+    fontWeight: "600",
+  },
+  resultMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   resultSubtitle: {
-    fontSize: fontSizes.sm,
+    fontSize: 13,
   },
-  resultMeta: {
+  ratingBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.xs,
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: "rgba(0,0,0,0.2)", // Subtle background
   },
-  resultRating: {
-    fontSize: fontSizes.sm,
-    fontWeight: "600",
-  },
-  historyContainer: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-  },
-  historyHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: spacing.md,
-    paddingTop: spacing.md,
-  },
-  historyTitle: {
-    fontSize: fontSizes.lg,
+  ratingText: {
+    fontSize: 11,
     fontWeight: "700",
   },
-  clearText: {
-    fontSize: fontSizes.sm,
+
+  // History Styles - CLEANER LIST
+  sectionContainer: {
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.lg,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: spacing.sm,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  clearAllText: {
+    fontSize: 13,
     fontWeight: "600",
   },
-  historyList: {
-    paddingBottom: spacing.xl,
-  },
-  historyItem: {
+  historyRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    padding: spacing.md,
-    borderRadius: borderRadius.lg,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    ...shadows.small,
-  },
-  historyItemContent: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   historyText: {
     flex: 1,
-    fontSize: fontSizes.md,
-    fontWeight: "500",
+    marginLeft: 12,
+    fontSize: 15,
   },
-  historyDelete: {
-    padding: spacing.sm,
-    marginLeft: spacing.sm,
+
+  // Tags
+  tagsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  tag: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  tagText: {
+    fontSize: 13,
+    fontWeight: "500",
   },
 });

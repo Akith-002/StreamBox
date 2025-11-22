@@ -64,7 +64,7 @@ export default function MainTabNavigator() {
           borderBottomColor: colors.border,
         },
         headerTintColor: colors.text,
-        headerShown: true,
+        headerShown: false,
       })}
     >
       <Tab.Screen
