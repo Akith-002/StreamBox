@@ -33,42 +33,51 @@ export default function ProfileScreen() {
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
+      showsVerticalScrollIndicator={false}
     >
-      <View style={styles.content}>
-        {/* Profile Header */}
-        <View style={styles.header}>
-          <View style={styles.avatarContainer}>
-            {user?.image ? (
-              <Image source={{ uri: user.image }} style={styles.avatar} />
-            ) : (
-              <View
-                style={[
-                  styles.avatarPlaceholder,
-                  {
-                    backgroundColor: colors.backgroundSecondary,
-                    borderColor: colors.primary,
-                  },
-                ]}
-              >
-                <Feather name="user" size={48} color={colors.primary} />
-              </View>
-            )}
-          </View>
-
-          <Text style={[styles.name, { color: colors.text }]}>
-            {user?.firstName} {user?.lastName}
-          </Text>
-          <Text style={[styles.username, { color: colors.textSecondary }]}>
-            @{user?.username}
-          </Text>
-          {user?.email && (
-            <Text style={[styles.email, { color: colors.textLight }]}>
-              {user.email}
-            </Text>
+      {/* Profile Header */}
+      <View style={[styles.profileHeader, { backgroundColor: colors.card }]}>
+        <View style={styles.avatarContainer}>
+          {user?.image ? (
+            <Image
+              source={{ uri: user.image }}
+              style={[styles.avatar, { borderColor: colors.primary }]}
+            />
+          ) : (
+            <View
+              style={[
+                styles.avatarPlaceholder,
+                {
+                  backgroundColor: `${colors.primary}20`,
+                  borderColor: colors.primary,
+                },
+              ]}
+            >
+              <Feather name="user" size={56} color={colors.primary} />
+            </View>
           )}
+          <View
+            style={[styles.statusBadge, { backgroundColor: colors.success }]}
+          >
+            <Feather name="check" size={12} color="#FFF" />
+          </View>
         </View>
 
-        {/* Profile Info Cards */}
+        <Text style={[styles.name, { color: colors.text }]}>
+          {user?.firstName} {user?.lastName}
+        </Text>
+        <Text style={[styles.username, { color: colors.textSecondary }]}>
+          @{user?.username}
+        </Text>
+        {user?.email && (
+          <Text style={[styles.email, { color: colors.textLight }]}>
+            {user.email}
+          </Text>
+        )}
+      </View>
+
+      <View style={styles.content}>
+        {/* Account Information Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Account Information
@@ -77,14 +86,18 @@ export default function ProfileScreen() {
           <View
             style={[
               styles.card,
-              { backgroundColor: colors.card, borderColor: colors.border },
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
             ]}
           >
+            {/* Full Name */}
             <View style={styles.infoRow}>
               <View
                 style={[
                   styles.infoIconContainer,
-                  { backgroundColor: colors.primary + "20" },
+                  { backgroundColor: `${colors.primary}20` },
                 ]}
               >
                 <Feather name="user" size={20} color={colors.primary} />
@@ -105,11 +118,12 @@ export default function ProfileScreen() {
               style={[styles.divider, { backgroundColor: colors.border }]}
             />
 
+            {/* Username */}
             <View style={styles.infoRow}>
               <View
                 style={[
                   styles.infoIconContainer,
-                  { backgroundColor: colors.primary + "20" },
+                  { backgroundColor: `${colors.primary}20` },
                 ]}
               >
                 <Feather name="at-sign" size={20} color={colors.primary} />
@@ -126,6 +140,7 @@ export default function ProfileScreen() {
               </View>
             </View>
 
+            {/* Email */}
             {user?.email && (
               <>
                 <View
@@ -135,7 +150,7 @@ export default function ProfileScreen() {
                   <View
                     style={[
                       styles.infoIconContainer,
-                      { backgroundColor: colors.primary + "20" },
+                      { backgroundColor: `${colors.primary}20` },
                     ]}
                   >
                     <Feather name="mail" size={20} color={colors.primary} />
@@ -157,6 +172,7 @@ export default function ProfileScreen() {
               </>
             )}
 
+            {/* Gender */}
             {user?.gender && (
               <>
                 <View
@@ -166,7 +182,7 @@ export default function ProfileScreen() {
                   <View
                     style={[
                       styles.infoIconContainer,
-                      { backgroundColor: colors.primary + "20" },
+                      { backgroundColor: `${colors.primary}20` },
                     ]}
                   >
                     <Feather name="info" size={20} color={colors.primary} />
@@ -181,7 +197,8 @@ export default function ProfileScreen() {
                       Gender
                     </Text>
                     <Text style={[styles.infoValue, { color: colors.text }]}>
-                      {user.gender}
+                      {user.gender.charAt(0).toUpperCase() +
+                        user.gender.slice(1)}
                     </Text>
                   </View>
                 </View>
@@ -190,25 +207,35 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Theme Settings */}
+        {/* Appearance Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Appearance
           </Text>
+
           <View
             style={[
               styles.card,
-              { backgroundColor: colors.card, borderColor: colors.border },
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
             ]}
           >
             <View style={styles.themeRow}>
               <View style={styles.themeContent}>
-                <Feather
-                  name={theme === "dark" ? "moon" : "sun"}
-                  size={20}
-                  color={colors.primary}
-                  style={styles.themeIcon}
-                />
+                <View
+                  style={[
+                    styles.themeIconContainer,
+                    { backgroundColor: `${colors.primary}20` },
+                  ]}
+                >
+                  <Feather
+                    name={theme === "dark" ? "moon" : "sun"}
+                    size={20}
+                    color={colors.primary}
+                  />
+                </View>
                 <View style={styles.themeTextContent}>
                   <Text
                     style={[styles.infoLabel, { color: colors.textSecondary }]}
@@ -233,9 +260,110 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Settings Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Support
+          </Text>
+
+          <View
+            style={[
+              styles.card,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <TouchableOpacity style={styles.settingRow}>
+              <View
+                style={[
+                  styles.infoIconContainer,
+                  { backgroundColor: `${colors.primary}20` },
+                ]}
+              >
+                <Feather name="help-circle" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.infoContent}>
+                <Text
+                  style={[styles.infoLabel, { color: colors.textSecondary }]}
+                >
+                  Help & Support
+                </Text>
+              </View>
+              <Feather
+                name="chevron-right"
+                size={20}
+                color={colors.textLight}
+              />
+            </TouchableOpacity>
+
+            <View
+              style={[styles.divider, { backgroundColor: colors.border }]}
+            />
+
+            <TouchableOpacity style={styles.settingRow}>
+              <View
+                style={[
+                  styles.infoIconContainer,
+                  { backgroundColor: `${colors.primary}20` },
+                ]}
+              >
+                <Feather name="shield" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.infoContent}>
+                <Text
+                  style={[styles.infoLabel, { color: colors.textSecondary }]}
+                >
+                  Privacy Policy
+                </Text>
+              </View>
+              <Feather
+                name="chevron-right"
+                size={20}
+                color={colors.textLight}
+              />
+            </TouchableOpacity>
+
+            <View
+              style={[styles.divider, { backgroundColor: colors.border }]}
+            />
+
+            <TouchableOpacity style={styles.settingRow}>
+              <View
+                style={[
+                  styles.infoIconContainer,
+                  { backgroundColor: `${colors.primary}20` },
+                ]}
+              >
+                <Feather name="file-text" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.infoContent}>
+                <Text
+                  style={[styles.infoLabel, { color: colors.textSecondary }]}
+                >
+                  Terms of Service
+                </Text>
+              </View>
+              <Feather
+                name="chevron-right"
+                size={20}
+                color={colors.textLight}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Logout Button */}
         <View style={styles.section}>
-          <Button title="Log Out" onPress={handleLogout} variant="outline" />
+          <Button title="Sign Out" onPress={handleLogout} variant="outline" />
+        </View>
+
+        {/* App Version */}
+        <View style={styles.footer}>
+          <Text style={[styles.versionText, { color: colors.textLight }]}>
+            StreamBox v1.0.0
+          </Text>
         </View>
       </View>
     </ScrollView>
@@ -246,29 +374,44 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
-    padding: spacing.lg,
-  },
-  header: {
+  profileHeader: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
     alignItems: "center",
-    paddingVertical: spacing.xl,
+    borderBottomLeftRadius: borderRadius.xl,
+    borderBottomRightRadius: borderRadius.xl,
+    ...shadows.medium,
   },
   avatarContainer: {
-    marginBottom: spacing.md,
+    position: "relative",
+    marginBottom: spacing.lg,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     borderWidth: 3,
   },
   avatarPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 3,
+  },
+  statusBadge: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 3,
+    borderColor: "inherit",
   },
   name: {
     fontSize: fontSizes.xl,
@@ -282,6 +425,9 @@ const styles = StyleSheet.create({
   email: {
     fontSize: fontSizes.sm,
   },
+  content: {
+    padding: spacing.lg,
+  },
   section: {
     marginBottom: spacing.xl,
   },
@@ -292,18 +438,19 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: borderRadius.lg,
-    padding: spacing.md,
+    overflow: "hidden",
     ...shadows.small,
     borderWidth: 1,
   },
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
   },
   infoIconContainer: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: borderRadius.md,
     justifyContent: "center",
     alignItems: "center",
@@ -322,23 +469,42 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    marginVertical: spacing.xs,
+    marginHorizontal: spacing.md,
+  },
+  settingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
   },
   themeRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
   },
   themeContent: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
   },
-  themeIcon: {
+  themeIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.md,
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: spacing.md,
   },
   themeTextContent: {
     flex: 1,
+  },
+  footer: {
+    alignItems: "center",
+    paddingVertical: spacing.lg,
+  },
+  versionText: {
+    fontSize: fontSizes.xs,
   },
 });

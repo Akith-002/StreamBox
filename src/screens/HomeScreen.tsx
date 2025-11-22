@@ -10,9 +10,10 @@ import {
   Dimensions,
   ImageBackground,
   Animated,
-  Image, // Make sure to import Image
+  Image,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { useGetTrendingMoviesQuery } from "../api/tmdbApi";
 import { useTheme } from "../hooks/useTheme";
@@ -21,6 +22,7 @@ import { Movie } from "../types/Movie";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
 
 const HERO_ROTATION_INTERVAL = 5000;
+const screenWidth = Dimensions.get("window").width;
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
@@ -31,65 +33,49 @@ export default function HomeScreen() {
   const [heroIndex, setHeroIndex] = useState(0);
   const [nextHeroIndex, setNextHeroIndex] = useState(0);
 
-  // We only need one animation value for the "Overlay"
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  // Track the numeric opacity value in state so we don't read private internals
+  // Keep a numeric copy of the animated opacity so we don't read private internals
   const [overlayOpacity, setOverlayOpacity] = useState<number>(0);
+
+  useEffect(() => {
+    const id = fadeAnim.addListener(({ value }) => setOverlayOpacity(value));
+    return () => {
+      try {
+        fadeAnim.removeListener(id);
+      } catch (e) {
+        // ignore
+      }
+    };
+  }, [fadeAnim]);
 
   const trendingMovies = data?.results ?? [];
   const heroMovies = trendingMovies.slice(0, 5);
   const currentMovie = heroMovies[heroIndex];
-  const nextMovie = heroMovies[nextHeroIndex]; // The movie we are transitioning TO
+  const nextMovie = heroMovies[nextHeroIndex];
   const topMovies = trendingMovies.slice(5, 10);
   const popularMovies = trendingMovies.slice(10, 15);
 
   const changeHeroMovie = (newIndex: number) => {
     if (newIndex === heroIndex) return;
 
-    // 1. Prepare the "Next" layer
     setNextHeroIndex(newIndex);
 
-    // 2. Animate the "Next" layer from 0 to 1 opacity ON TOP of the current layer
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 800, // Slower duration feels smoother for hero sections
+      duration: 800,
       useNativeDriver: true,
     }).start(({ finished }) => {
       if (finished) {
-        // 3. Animation done. The "Next" movie is fully visible.
-        // Now we update the "Base" movie to match the "Next" movie.
         setHeroIndex(newIndex);
-
-        // 4. Instantly hide the overlay.
-        // Since Base and Next are now identical, the user sees no change.
         fadeAnim.setValue(0);
       }
     });
   };
 
   useEffect(() => {
-    // Keep overlayOpacity updated while the animation runs, so render can
-    // safely react to the current opacity without touching private fields.
-    const listenerId = fadeAnim.addListener(({ value }) => {
-      setOverlayOpacity(value);
-    });
-
-    return () => {
-      // Clean up the listener when the component unmounts or fadeAnim changes
-      try {
-        fadeAnim.removeListener(listenerId);
-      } catch (e) {
-        // Some RN versions may not throw but we defensively ignore any issues
-      }
-    };
-    // Note: fadeAnim won't change identity so this effect acts like componentDidMount
-  }, [fadeAnim]);
-
-  useEffect(() => {
     if (heroMovies.length === 0) return;
 
     const interval = setInterval(() => {
-      // Calculate next index based on current visual state
       const nextIndex = (heroIndex + 1) % heroMovies.length;
       changeHeroMovie(nextIndex);
     }, HERO_ROTATION_INTERVAL);
@@ -98,10 +84,9 @@ export default function HomeScreen() {
   }, [heroIndex, heroMovies.length]);
 
   const handleMoviePress = (movieId: number) => {
-    navigation.navigate("Details" as never, { movieId } as never);
+    navigation.navigate("Details", { movieId } as any);
   };
 
-  // ... [Keep your isLoading and Error renders exactly as they were] ...
   if (isLoading) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
@@ -118,66 +103,101 @@ export default function HomeScreen() {
           onPress={() => refetch()}
           style={[styles.retryButton, { backgroundColor: colors.primary }]}
         >
-          <Text style={{ color: colors.card }}>Try Again</Text>
+          <Text style={{ color: colors.card, fontWeight: "600" }}>
+            Try Again
+          </Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  // Helper to render the content inside the hero (Title, Rating, Button)
   const renderHeroContent = (movie: Movie) => (
     <>
-      <View style={styles.heroGradient} />
+      <LinearGradient
+        colors={["rgba(15, 23, 42, 0)", "rgba(15, 23, 42, 0.9)"]}
+        style={styles.heroGradient}
+      />
       <View style={styles.heroContent}>
         <Text
-          style={[styles.heroTitle, { color: colors.card }]}
+          style={[styles.heroTitle, { color: "#FFFFFF" }]}
           numberOfLines={2}
         >
           {movie.title}
         </Text>
         <View style={styles.heroMeta}>
-          <View style={styles.heroRating}>
-            <Feather name="star" size={16} color="#FFB800" />
-            <Text style={[styles.heroRatingText, { color: colors.card }]}>
+          <LinearGradient
+            colors={[colors.primary, colors.accent]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.heroRating}
+          >
+            <Feather name="star" size={14} color="#FFFFFF" />
+            <Text style={styles.heroRatingText}>
               {movie.vote_average.toFixed(1)}
             </Text>
-          </View>
-          <Text style={[styles.heroYear, { color: colors.card }]}>
+          </LinearGradient>
+          <Text style={styles.heroYear}>
             {movie.release_date ? movie.release_date.slice(0, 4) : ""}
           </Text>
         </View>
         <TouchableOpacity
-          style={[styles.heroButton, { backgroundColor: colors.primary }]}
           onPress={() => handleMoviePress(movie.id)}
+          activeOpacity={0.85}
         >
-          <Feather name="play" size={20} color={colors.card} />
-          <Text style={[styles.heroButtonText, { color: colors.card }]}>
-            Watch Now
-          </Text>
+          <LinearGradient
+            colors={[colors.primary, colors.accent]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.heroButton}
+          >
+            <Feather name="play" size={18} color="#FFFFFF" />
+            <Text style={styles.heroButtonText}>Watch Now</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </>
   );
 
-  // Helper for Horizontal Cards (Moved out of main render for cleanliness)
   const renderHorizontalMovieCard = ({ item }: { item: Movie }) => {
     const posterUri = item.poster_path
       ? `${TMDB_IMAGE_BASE_URL}${item.poster_path}`
       : undefined;
+
     return (
       <TouchableOpacity
         style={styles.horizontalCard}
         onPress={() => handleMoviePress(item.id)}
-        activeOpacity={0.8}
+        activeOpacity={0.7}
       >
         {posterUri ? (
-          <Image source={{ uri: posterUri }} style={styles.horizontalPoster} />
+          <View style={styles.posterWrapper}>
+            <Image
+              source={{ uri: posterUri }}
+              style={styles.horizontalPoster}
+            />
+            <View style={styles.posterGlassOverlay}>
+              <LinearGradient
+                colors={["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.8)"]}
+                style={styles.posterGradient}
+              >
+                <View style={styles.ratingBadgeSmall}>
+                  <Feather name="star" size={10} color="#FFD700" />
+                  <Text style={styles.ratingSmallText}>
+                    {item.vote_average.toFixed(1)}
+                  </Text>
+                </View>
+              </LinearGradient>
+            </View>
+          </View>
         ) : (
-          <View
-            style={[styles.horizontalPoster, { backgroundColor: colors.card }]}
+          <LinearGradient
+            colors={[`${colors.primary}30`, `${colors.accent}30`]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.horizontalPoster}
           >
             <Feather name="film" size={32} color={colors.textLight} />
-          </View>
+          </LinearGradient>
         )}
         <Text
           style={[styles.horizontalCardTitle, { color: colors.text }]}
@@ -197,7 +217,7 @@ export default function HomeScreen() {
       {/* Featured Movie Hero */}
       {currentMovie && (
         <View style={styles.heroSection}>
-          {/* 1. BASE LAYER - Always Visible (The "Old" Movie) */}
+          {/* Base Layer */}
           <View style={StyleSheet.absoluteFill}>
             <ImageBackground
               source={{
@@ -212,8 +232,7 @@ export default function HomeScreen() {
             </ImageBackground>
           </View>
 
-          {/* 2. OVERLAY LAYER - Fades In (The "New" Movie) */}
-          {/* We only render this if nextHeroIndex is different to prevent unnecessary renders */}
+          {/* Overlay Layer */}
           <Animated.View
             style={[StyleSheet.absoluteFill, { opacity: fadeAnim, zIndex: 1 }]}
           >
@@ -232,7 +251,7 @@ export default function HomeScreen() {
             )}
           </Animated.View>
 
-          {/* 3. Indicators - Ensure zIndex is higher than the overlay */}
+          {/* Carousel Indicators */}
           <View style={[styles.carouselIndicators, { zIndex: 2 }]}>
             {heroMovies.map((_: Movie, index: number) => (
               <TouchableOpacity
@@ -245,8 +264,8 @@ export default function HomeScreen() {
                     backgroundColor:
                       index ===
                       (overlayOpacity > 0.5 ? nextHeroIndex : heroIndex)
-                        ? "#FFFFFF"
-                        : "rgba(255, 255, 255, 0.4)",
+                        ? colors.primary
+                        : `rgba(255, 255, 255, 0.3)`,
                     width:
                       index ===
                       (overlayOpacity > 0.5 ? nextHeroIndex : heroIndex)
@@ -260,12 +279,44 @@ export default function HomeScreen() {
         </View>
       )}
 
+      {/* Trending Now Section */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Trending Now
+            </Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textLight }]}>
+              This week's hottest movies
+            </Text>
+          </View>
+          <TouchableOpacity>
+            <Text style={[styles.seeMore, { color: colors.primary }]}>
+              See all
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <FlatList
+          data={heroMovies}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(item) => `trending-${item.id}`}
+          renderItem={renderHorizontalMovieCard}
+          contentContainerStyle={styles.horizontalList}
+        />
+      </View>
+
       {/* Top Rated Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Top Rated
-          </Text>
+          <View>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Top Rated
+            </Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textLight }]}>
+              Highest-rated films
+            </Text>
+          </View>
           <TouchableOpacity>
             <Text style={[styles.seeMore, { color: colors.primary }]}>
               See all
@@ -285,9 +336,14 @@ export default function HomeScreen() {
       {/* Popular Now Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Popular Now
-          </Text>
+          <View>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Popular Now
+            </Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textLight }]}>
+              What people are watching
+            </Text>
+          </View>
           <TouchableOpacity>
             <Text style={[styles.seeMore, { color: colors.primary }]}>
               See all
@@ -309,9 +365,7 @@ export default function HomeScreen() {
   );
 }
 
-// STYLES remain exactly the same as your original code
 const styles = StyleSheet.create({
-  // ... keep your existing styles ...
   container: { flex: 1 },
   centered: {
     flex: 1,
@@ -322,83 +376,141 @@ const styles = StyleSheet.create({
   retryButton: {
     marginTop: spacing.md,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
   },
   heroSection: {
-    marginTop: spacing.md,
+    marginTop: spacing.xl,
     marginHorizontal: spacing.lg,
     borderRadius: borderRadius.xl,
     overflow: "hidden",
-    height: 320, // Explicit height is important for absolute positioning to work
+    height: 380,
     ...shadows.large,
   },
-  heroImage: { width: "100%", height: 320, justifyContent: "flex-end" },
+  heroImage: { width: "100%", height: 380, justifyContent: "flex-end" },
   heroImageStyle: { borderRadius: borderRadius.xl },
   heroGradient: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.4)",
-  }, // Darkened slightly for better text contrast
-  heroContent: { padding: spacing.lg, gap: spacing.sm },
+  },
+  heroContent: { padding: spacing.xl, gap: spacing.lg },
   heroTitle: {
-    fontSize: fontSizes.xxl,
+    fontSize: 32,
     fontWeight: "bold",
-    textShadowColor: "rgba(0, 0, 0, 0.75)",
+    color: "#FFFFFF",
+    textShadowColor: "rgba(0, 0, 0, 0.8)",
     textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
+    textShadowRadius: 10,
   },
   heroMeta: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  heroRating: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
-  heroRatingText: { fontSize: fontSizes.md, fontWeight: "600" },
-  heroYear: { fontSize: fontSizes.md, fontWeight: "500" },
+  heroRating: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.xl,
+    ...shadows.medium,
+  },
+  heroRatingText: {
+    fontSize: fontSizes.sm,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  heroYear: {
+    fontSize: fontSizes.sm,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    textShadowColor: "rgba(0, 0, 0, 0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
   heroButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.lg,
     paddingHorizontal: spacing.xl,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
     gap: spacing.sm,
     alignSelf: "flex-start",
-    ...shadows.medium,
+    ...shadows.large,
   },
-  heroButtonText: { fontSize: fontSizes.md, fontWeight: "bold" },
-  section: { marginTop: spacing.xl },
+  heroButtonText: {
+    fontSize: fontSizes.md,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+  section: { marginTop: spacing.xl, marginBottom: spacing.md },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
-  sectionTitle: { fontSize: fontSizes.xl, fontWeight: "bold" },
+  sectionTitle: { fontSize: 24, fontWeight: "bold" },
+  sectionSubtitle: { fontSize: fontSizes.sm, marginTop: 4, fontWeight: "500" },
   seeMore: { fontSize: fontSizes.sm, fontWeight: "600" },
   horizontalList: { paddingHorizontal: spacing.lg },
-  horizontalCard: { width: 130, marginRight: spacing.md },
+  horizontalCard: { width: 140, marginRight: spacing.lg },
+  posterWrapper: {
+    position: "relative",
+    width: 140,
+    height: 210,
+    borderRadius: borderRadius.xl,
+    overflow: "hidden",
+  },
   horizontalPoster: {
-    width: 130,
-    height: 195,
-    borderRadius: borderRadius.lg,
-    ...shadows.medium,
+    width: 140,
+    height: 210,
+    borderRadius: borderRadius.xl,
+    ...shadows.large,
     justifyContent: "center",
     alignItems: "center",
+  },
+  posterGlassOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  posterGradient: {
+    flex: 1,
+    justifyContent: "flex-end",
+    padding: spacing.sm,
+  },
+  ratingBadgeSmall: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: borderRadius.md,
+    alignSelf: "flex-start",
+  },
+  ratingSmallText: {
+    fontSize: 10,
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
   horizontalCardTitle: {
     marginTop: spacing.sm,
     fontSize: fontSizes.sm,
-    fontWeight: "600",
+    fontWeight: "700",
     lineHeight: 18,
   },
   carouselIndicators: {
     position: "absolute",
-    bottom: spacing.md,
+    bottom: spacing.xl,
     left: 0,
     right: 0,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
-  indicator: { width: 8, height: 8, borderRadius: 4, ...shadows.small },
+  indicator: {
+    height: 8,
+    borderRadius: 4,
+    ...shadows.medium,
+  },
   bottomSpacing: { height: spacing.xxl },
 });

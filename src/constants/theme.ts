@@ -13,68 +13,70 @@ export const isLargeScreen = width >= 768;
 // Color palette
 export const lightColors = {
   // Primary colors
-  primary: "#E50914",
-  primaryDark: "#B20710",
-  primaryLight: "#FF1F2E",
+  primary: "#6366F1",
+  accent: "#EC4899",
+  primaryDark: "#4F46E5",
+  primaryLight: "#818CF8",
 
   // Background colors
-  background: "#FFFFFF",
-  backgroundSecondary: "#F5F5F5",
+  background: "#F1F5F9",
+  backgroundSecondary: "#E2E8F0",
   surface: "#FFFFFF",
 
   // Text colors
-  text: "#000000",
-  textSecondary: "#666666",
-  textLight: "#999999",
+  text: "#1E293B",
+  textSecondary: "#64748B",
+  textLight: "#94A3B8",
 
   // Component colors
   card: "#FFFFFF",
-  border: "#E0E0E0",
-  inputBackground: "#F5F5F5",
+  border: "#CBD5E1",
+  inputBackground: "#F8FAFC",
 
   // Status colors
-  success: "#4CAF50",
-  error: "#F44336",
-  warning: "#FF9800",
-  info: "#2196F3",
+  success: "#10B981",
+  error: "#EF4444",
+  warning: "#F59E0B",
+  info: "#3B82F6",
 
   // Tab bar
-  tabBarActive: "#E50914",
-  tabBarInactive: "#999999",
+  tabBarActive: "#6366F1",
+  tabBarInactive: "#94A3B8",
   tabBarBackground: "#FFFFFF",
 };
 
 export const darkColors = {
   // Primary colors
-  primary: "#E50914",
-  primaryDark: "#B20710",
-  primaryLight: "#FF1F2E",
+  primary: "#6366F1",
+  accent: "#EC4899",
+  primaryDark: "#4F46E5",
+  primaryLight: "#818CF8",
 
   // Background colors
-  background: "#121212",
-  backgroundSecondary: "#1E1E1E",
-  surface: "#2C2C2C",
+  background: "#0F172A",
+  backgroundSecondary: "#1E293B",
+  surface: "#1E293B",
 
   // Text colors
-  text: "#FFFFFF",
-  textSecondary: "#B0B0B0",
-  textLight: "#808080",
+  text: "#F1F5F9",
+  textSecondary: "#CBD5E1",
+  textLight: "#94A3B8",
 
   // Component colors
-  card: "#1E1E1E",
-  border: "#333333",
-  inputBackground: "#2C2C2C",
+  card: "#1E293B",
+  border: "#334155",
+  inputBackground: "#0F172A",
 
   // Status colors
-  success: "#66BB6A",
-  error: "#EF5350",
-  warning: "#FFA726",
-  info: "#42A5F5",
+  success: "#10B981",
+  error: "#EF4444",
+  warning: "#F59E0B",
+  info: "#3B82F6",
 
   // Tab bar
-  tabBarActive: "#E50914",
-  tabBarInactive: "#808080",
-  tabBarBackground: "#1E1E1E",
+  tabBarActive: "#6366F1",
+  tabBarInactive: "#64748B",
+  tabBarBackground: "#1E293B",
 };
 
 // Typography
@@ -107,11 +109,11 @@ export const spacing = {
 
 // Border radius
 export const borderRadius = {
-  sm: 4,
-  md: 8,
-  lg: 12,
-  xl: 16,
-  round: 999,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  round: 50,
 };
 
 // Shadows

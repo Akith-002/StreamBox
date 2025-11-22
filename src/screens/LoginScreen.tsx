@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -20,15 +21,17 @@ import Input from "../components/Input";
 import Button from "../components/Button";
 import { LoginCredentials } from "../types/Auth";
 import {
-  lightColors,
   spacing,
   fontSizes,
-  SCREEN_HEIGHT,
   borderRadius,
+  SCREEN_HEIGHT,
 } from "../constants/theme";
+
+import { useTheme } from "../hooks/useTheme";
 
 export default function LoginScreen({ navigation }: { navigation: any }) {
   const dispatch = useDispatch();
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(false);
 
   const {
@@ -81,7 +84,7 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
@@ -90,84 +93,136 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
-        <View style={styles.header}>
+        {/* Hero Section */}
+        <View style={styles.heroSection}>
+          {/* Logo Container */}
           <View style={styles.logoContainer}>
-            <Feather name="film" size={48} color={lightColors.primary} />
+            <View
+              style={[
+                styles.logoCircle,
+                { backgroundColor: `${colors.primary}20` },
+              ]}
+            >
+              <Feather name="film" size={56} color={colors.primary} />
+            </View>
           </View>
-          <Text style={styles.title}>StreamBox</Text>
-          <Text style={styles.subtitle}>
-            Sign in to explore trending movies
+
+          {/* Branding */}
+          <Text style={[styles.appName, { color: colors.text }]}>
+            StreamBox
+          </Text>
+          <Text style={[styles.tagline, { color: colors.textSecondary }]}>
+            Discover a world of movies
           </Text>
         </View>
 
-        {/* Demo credentials info */}
-        <View style={styles.demoInfo}>
-          <Feather name="info" size={16} color={lightColors.info} />
-          <View style={styles.demoTextContainer}>
-            <Text style={styles.demoText}>Demo: username: emilys</Text>
-            <Text style={styles.demoText}>password: emilyspass</Text>
+        {/* Demo Info Banner */}
+        <View
+          style={[
+            styles.demoBanner,
+            { backgroundColor: `${colors.info}10`, borderColor: colors.info },
+          ]}
+        >
+          <View style={styles.demoIconContainer}>
+            <Feather name="info" size={18} color={colors.info} />
+          </View>
+          <View style={styles.demoContent}>
+            <Text style={[styles.demoTitle, { color: colors.text }]}>
+              Demo Credentials
+            </Text>
+            <Text style={[styles.demoText, { color: colors.textSecondary }]}>
+              username: <Text style={{ fontWeight: "bold" }}>emilys</Text>
+            </Text>
+            <Text style={[styles.demoText, { color: colors.textSecondary }]}>
+              password: <Text style={{ fontWeight: "bold" }}>emilyspass</Text>
+            </Text>
           </View>
         </View>
 
-        {/* Form */}
-        <View style={styles.form}>
-          <Controller
-            name="username"
-            control={control}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Username"
-                placeholder="Enter your username"
-                icon="user"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.username?.message}
-                touched={touchedFields.username}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            )}
-          />
+        {/* Form Section */}
+        <View style={styles.formSection}>
+          <Text style={[styles.formTitle, { color: colors.text }]}>
+            Sign In
+          </Text>
 
-          <Controller
-            name="password"
-            control={control}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Password"
-                placeholder="Enter your password"
-                icon="lock"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.password?.message}
-                touched={touchedFields.password}
-                secureTextEntry
-                autoCapitalize="none"
-              />
-            )}
-          />
+          <View style={styles.form}>
+            <Controller
+              name="username"
+              control={control}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  label="Username"
+                  placeholder="Enter your username"
+                  icon="user"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={errors.username?.message}
+                  touched={touchedFields.username}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              )}
+            />
 
-          <Button
-            title="Sign In"
-            onPress={handleSubmit(onSubmit)}
-            loading={loading}
-            disabled={loading}
+            <Controller
+              name="password"
+              control={control}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  label="Password"
+                  placeholder="Enter your password"
+                  icon="lock"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={errors.password?.message}
+                  touched={touchedFields.password}
+                  secureTextEntry
+                  autoCapitalize="none"
+                />
+              )}
+            />
+
+            <Button
+              title={loading ? "Signing In..." : "Sign In"}
+              onPress={handleSubmit(onSubmit)}
+              loading={loading}
+              disabled={loading}
+            />
+          </View>
+        </View>
+
+        {/* Divider */}
+        <View style={styles.divider}>
+          <View
+            style={[styles.dividerLine, { backgroundColor: colors.border }]}
+          />
+          <Text style={[styles.dividerText, { color: colors.textLight }]}>
+            or
+          </Text>
+          <View
+            style={[styles.dividerLine, { backgroundColor: colors.border }]}
           />
         </View>
 
-        {/* Register Link */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Don't have an account? </Text>
+        {/* Sign Up Link */}
+        <View style={styles.signUpSection}>
+          <Text style={[styles.signUpText, { color: colors.textSecondary }]}>
+            Don't have an account?
+          </Text>
           <TouchableOpacity
             onPress={() => navigation.navigate("Register")}
             disabled={loading}
           >
-            <Text style={styles.footerLink}>Sign Up</Text>
+            <Text style={[styles.signUpLink, { color: colors.primary }]}>
+              Create Account
+            </Text>
           </TouchableOpacity>
         </View>
+
+        {/* Bottom Spacing */}
+        <View style={styles.bottomSpacing} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -176,74 +231,104 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: lightColors.background,
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: "center",
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xl,
-    minHeight: SCREEN_HEIGHT * 0.9,
+    minHeight: SCREEN_HEIGHT * 0.95,
   },
-  header: {
+  heroSection: {
     alignItems: "center",
     marginBottom: spacing.xl,
+    marginTop: spacing.lg,
   },
   logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: borderRadius.xl,
-    backgroundColor: lightColors.backgroundSecondary,
+    marginBottom: spacing.lg,
+  },
+  logoCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: spacing.md,
   },
-  title: {
+  appName: {
     fontSize: fontSizes.xxxl,
-    fontWeight: "bold" as "bold",
-    color: lightColors.text,
-    marginBottom: spacing.xs,
+    fontWeight: "bold",
+    marginBottom: spacing.sm,
   },
-  subtitle: {
+  tagline: {
     fontSize: fontSizes.md,
-    color: lightColors.textSecondary,
     textAlign: "center",
-  },
-  demoInfo: {
-    flexDirection: "row",
-    backgroundColor: lightColors.info + "15",
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
     marginBottom: spacing.lg,
-    borderLeftWidth: 3,
-    borderLeftColor: lightColors.info,
   },
-  demoTextContainer: {
-    marginLeft: spacing.sm,
+  demoBanner: {
+    flexDirection: "row",
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+    borderLeftWidth: 4,
+    borderTopWidth: 1,
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+  },
+  demoIconContainer: {
+    marginRight: spacing.md,
+    marginTop: spacing.xs,
+  },
+  demoContent: {
     flex: 1,
   },
-  demoText: {
+  demoTitle: {
     fontSize: fontSizes.sm,
-    color: lightColors.text,
-    fontWeight: "500" as "500",
+    fontWeight: "600",
+    marginBottom: spacing.sm,
   },
-  form: {
-    width: "100%",
+  demoText: {
+    fontSize: fontSizes.xs,
+    lineHeight: 18,
+  },
+  formSection: {
+    marginBottom: spacing.xl,
+  },
+  formTitle: {
+    fontSize: fontSizes.xxl,
+    fontWeight: "bold",
     marginBottom: spacing.lg,
   },
-  footer: {
+  form: {
+    gap: spacing.md,
+  },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: spacing.xl,
+    gap: spacing.md,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: fontSizes.sm,
+    fontWeight: "500",
+  },
+  signUpSection: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: spacing.md,
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
   },
-  footerText: {
+  signUpText: {
     fontSize: fontSizes.md,
-    color: lightColors.textSecondary,
   },
-  footerLink: {
+  signUpLink: {
     fontSize: fontSizes.md,
-    color: lightColors.primary,
-    fontWeight: "600" as "600",
+    fontWeight: "700",
+  },
+  bottomSpacing: {
+    height: spacing.lg,
   },
 });

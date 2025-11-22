@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,8 +9,10 @@ import {
   TouchableOpacity,
   Dimensions,
   Alert,
+  Animated,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
 import { useGetMovieDetailsQuery } from "../api/tmdbApi";
@@ -20,13 +22,7 @@ import {
   selectFavouriteMovies,
 } from "../store/features/favouritesSlice";
 import { useTheme } from "../hooks/useTheme";
-import {
-  spacing,
-  fontSizes,
-  borderRadius,
-  shadows,
-  lightColors,
-} from "../constants/theme";
+import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
 import { RootState } from "../store/store";
 
@@ -39,7 +35,9 @@ export default function DetailsScreen() {
   const { colors } = useTheme();
   const { movieId } = route.params;
   const { data: movie, isLoading, error } = useGetMovieDetailsQuery(movieId);
+
   const [isFavouriteAnimating, setIsFavouriteAnimating] = useState(false);
+  const heartScale = useRef(new Animated.Value(1)).current;
 
   const favouriteMovies = useSelector(selectFavouriteMovies);
   const isFavourite = movie
@@ -54,18 +52,26 @@ export default function DetailsScreen() {
     if (!movie) return;
 
     setIsFavouriteAnimating(true);
-    setTimeout(() => setIsFavouriteAnimating(false), 600);
+
+    Animated.sequence([
+      Animated.timing(heartScale, {
+        toValue: 1.3,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(heartScale, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setIsFavouriteAnimating(false));
 
     if (isFavourite) {
       dispatch(removeFavourite(movie.id));
-      Alert.alert("Removed", `${movie.title} removed from favourites`, [
-        { text: "OK" },
-      ]);
+      Alert.alert("Removed", `${movie.title} removed from favorites`);
     } else {
       dispatch(addFavourite(movie));
-      Alert.alert("Added", `${movie.title} added to favourites`, [
-        { text: "OK" },
-      ]);
+      Alert.alert("Added", `${movie.title} added to favorites`);
     }
   };
 
@@ -74,7 +80,7 @@ export default function DetailsScreen() {
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-          Loading movie details…
+          Loading details…
         </Text>
       </View>
     );
@@ -111,12 +117,16 @@ export default function DetailsScreen() {
     ? new Date(movie.release_date).getFullYear()
     : "N/A";
 
+  const genreString = movie.genres
+    ? movie.genres.map((g: any) => g.name).join(" • ")
+    : "N/A";
+
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
       showsVerticalScrollIndicator={false}
     >
-      {/* Header with Back Button */}
+      {/* Header */}
       <View
         style={[
           styles.headerContainer,
@@ -135,151 +145,204 @@ export default function DetailsScreen() {
         >
           {movie.title}
         </Text>
-        <TouchableOpacity
-          onPress={handleFavouritePress}
+        <Animated.View
           style={[
             styles.favouriteButton,
-            isFavouriteAnimating && styles.favouriteButtonAnimating,
+            { transform: [{ scale: heartScale }] },
           ]}
         >
-          <Feather
-            name={isFavourite ? "heart" : "heart"}
-            size={24}
-            color={isFavourite ? colors.error : colors.primary}
-            fill={isFavourite ? colors.error : "none"}
-          />
-        </TouchableOpacity>
+          <TouchableOpacity onPress={handleFavouritePress}>
+            <Feather
+              name="heart"
+              size={24}
+              color={isFavourite ? colors.error : colors.primary}
+              fill={isFavourite ? colors.error : "none"}
+            />
+          </TouchableOpacity>
+        </Animated.View>
       </View>
 
       {/* Backdrop Image */}
       {backdropImageUrl && (
-        <Image
-          source={{ uri: backdropImageUrl }}
-          style={[styles.backdropImage, { backgroundColor: colors.card }]}
-          resizeMode="cover"
-        />
+        <View style={styles.backdropContainer}>
+          <Image
+            source={{ uri: backdropImageUrl }}
+            style={[styles.backdropImage, { backgroundColor: colors.card }]}
+            resizeMode="cover"
+          />
+          <View
+            style={[
+              styles.backdropOverlay,
+              { backgroundColor: `rgba(15, 23, 42, 0.3)` },
+            ]}
+          />
+        </View>
       )}
 
       {/* Main Content */}
       <View style={styles.contentContainer}>
-        {/* Poster Image and Key Info */}
+        {/* Poster & Key Info */}
         <View style={styles.posterSection}>
           {posterImageUrl && (
             <Image
               source={{ uri: posterImageUrl }}
               style={[
                 styles.posterImage,
-                { backgroundColor: colors.card, borderColor: colors.border },
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
               ]}
               resizeMode="cover"
             />
           )}
           <View style={styles.keyInfo}>
-            <View style={styles.ratingContainer}>
-              <Feather name="star" size={16} color={colors.warning} />
-              <Text style={[styles.ratingText, { color: colors.text }]}>
-                {movie.vote_average?.toFixed(1) || "N/A"}
-              </Text>
-              <Text
-                style={[styles.ratingCount, { color: colors.textSecondary }]}
-              >
-                ({movie.vote_count?.toLocaleString() || 0})
-              </Text>
-            </View>
-            <View style={styles.yearContainer}>
+            {/* Rating */}
+            <LinearGradient
+              colors={[`${colors.primary}20`, `${colors.accent}20`]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[
+                styles.ratingContainer,
+                {
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Feather name="star" size={18} color={colors.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.ratingText, { color: colors.text }]}>
+                  {movie.vote_average?.toFixed(1) || "N/A"}
+                </Text>
+                <Text
+                  style={[styles.ratingCount, { color: colors.textSecondary }]}
+                >
+                  ({movie.vote_count?.toLocaleString() || 0})
+                </Text>
+              </View>
+            </LinearGradient>
+
+            {/* Year */}
+            <View
+              style={[
+                styles.metaBox,
+                {
+                  backgroundColor: `${colors.primary}10`,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
               <Feather name="calendar" size={16} color={colors.info} />
-              <Text style={[styles.yearText, { color: colors.textSecondary }]}>
+              <Text style={[styles.metaText, { color: colors.text }]}>
                 {releaseYear}
               </Text>
             </View>
+
+            {/* Runtime */}
+            {movie.runtime && (
+              <View
+                style={[
+                  styles.metaBox,
+                  {
+                    backgroundColor: `${colors.primary}10`,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Feather name="clock" size={16} color={colors.info} />
+                <Text style={[styles.metaText, { color: colors.text }]}>
+                  {movie.runtime} min
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
-        {/* Title and Tagline */}
+        {/* Title & Tagline */}
         <View style={styles.titleSection}>
           <Text style={[styles.title, { color: colors.text }]}>
             {movie.title}
           </Text>
           {movie.tagline && (
-            <Text style={[styles.tagline, { color: colors.textSecondary }]}>
+            <Text style={[styles.tagline, { color: colors.textLight }]}>
               "{movie.tagline}"
             </Text>
           )}
         </View>
 
         {/* Genres */}
-        {movie.genres && movie.genres.length > 0 && (
+        {genreString !== "N/A" && (
           <View style={styles.genresSection}>
-            <View style={styles.genresList}>
-              {movie.genres.map((genre: any) => (
-                <View
-                  key={genre.id}
-                  style={[styles.genreTag, { backgroundColor: colors.primary }]}
-                >
-                  <Text style={[styles.genreText, { color: colors.card }]}>
-                    {genre.name}
-                  </Text>
-                </View>
-              ))}
-            </View>
+            <Text style={[styles.genreText, { color: colors.text }]}>
+              {genreString}
+            </Text>
           </View>
         )}
 
-        {/* Runtime and Budget Info */}
-        <View style={styles.statsRow}>
-          {movie.runtime && (
-            <View
-              style={[
-                styles.statBox,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-            >
-              <Feather name="clock" size={18} color={colors.primary} />
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                Runtime
-              </Text>
-              <Text style={[styles.statValue, { color: colors.text }]}>
-                {movie.runtime} min
-              </Text>
-            </View>
-          )}
+        {/* Stats Grid */}
+        <View style={styles.statsGrid}>
           {movie.budget && movie.budget > 0 && (
             <View
               style={[
                 styles.statBox,
-                { backgroundColor: colors.card, borderColor: colors.border },
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
               ]}
             >
-              <Feather name="dollar-sign" size={18} color={colors.primary} />
+              <Feather name="dollar-sign" size={20} color={colors.primary} />
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
                 Budget
               </Text>
               <Text style={[styles.statValue, { color: colors.text }]}>
-                ${(movie.budget / 1000000).toFixed(0)}M
+                ${(movie.budget / 1000000).toFixed(1)}M
               </Text>
             </View>
           )}
+
           {movie.revenue && movie.revenue > 0 && (
             <View
               style={[
                 styles.statBox,
-                { backgroundColor: colors.card, borderColor: colors.border },
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
               ]}
             >
-              <Feather name="trending-up" size={18} color={colors.primary} />
+              <Feather name="trending-up" size={20} color={colors.success} />
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
                 Revenue
               </Text>
               <Text style={[styles.statValue, { color: colors.text }]}>
-                ${(movie.revenue / 1000000).toFixed(0)}M
+                ${(movie.revenue / 1000000).toFixed(1)}M
               </Text>
             </View>
           )}
+
+          <View
+            style={[
+              styles.statBox,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Feather name="zap" size={20} color={colors.warning} />
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+              Popularity
+            </Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>
+              {movie.popularity?.toFixed(0) || "N/A"}
+            </Text>
+          </View>
         </View>
 
         {/* Overview */}
         {movie.overview && (
-          <View style={styles.overviewSection}>
+          <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               Synopsis
             </Text>
@@ -291,27 +354,31 @@ export default function DetailsScreen() {
           </View>
         )}
 
-        {/* Production Details */}
+        {/* Production Companies */}
         {movie.production_companies &&
           movie.production_companies.length > 0 && (
-            <View style={styles.productionSection}>
+            <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 Production
               </Text>
               <View style={styles.companyList}>
                 {movie.production_companies.slice(0, 3).map((company: any) => (
-                  <View key={company.id} style={styles.companyItem}>
+                  <View
+                    key={company.id}
+                    style={[
+                      styles.companyItem,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
                     <Feather
                       name="briefcase"
                       size={16}
-                      color={colors.textSecondary}
+                      color={colors.primary}
                     />
-                    <Text
-                      style={[
-                        styles.companyName,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
+                    <Text style={[styles.companyName, { color: colors.text }]}>
                       {company.name}
                     </Text>
                   </View>
@@ -320,53 +387,30 @@ export default function DetailsScreen() {
             </View>
           )}
 
-        {/* Popularity */}
-        <View style={styles.popularitySection}>
-          <View
-            style={[
-              styles.popularityBar,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
+        {/* Add to Favorites CTA */}
+        <TouchableOpacity onPress={handleFavouritePress} activeOpacity={0.85}>
+          <LinearGradient
+            colors={
+              isFavourite
+                ? [colors.error, "#DC2626"]
+                : [colors.primary, colors.accent]
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.favouriteCTA}
           >
-            <View
-              style={[
-                styles.popularityFill,
-                {
-                  width: `${(movie.popularity / 1000) * 100}%`,
-                  backgroundColor: colors.primary,
-                },
-              ]}
+            <Feather
+              name="heart"
+              size={20}
+              color="#FFFFFF"
+              fill={isFavourite ? "#FFFFFF" : "none"}
             />
-          </View>
-          <Text
-            style={[styles.popularityText, { color: colors.textSecondary }]}
-          >
-            Popularity: {movie.popularity?.toFixed(1) || "N/A"}
-          </Text>
-        </View>
-
-        {/* Favourite Button (Primary CTA) */}
-        <TouchableOpacity
-          onPress={handleFavouritePress}
-          style={[
-            styles.favouriteCTA,
-            {
-              backgroundColor: isFavourite ? colors.error : colors.primary,
-            },
-          ]}
-        >
-          <Feather
-            name="heart"
-            size={20}
-            color={colors.card}
-            fill={isFavourite ? colors.card : "none"}
-          />
-          <Text style={[styles.favouriteCTAText, { color: colors.card }]}>
-            {isFavourite ? "Remove from Favourites" : "Add to Favourites"}
-          </Text>
+            <Text style={styles.favouriteCTAText}>
+              {isFavourite ? "Remove from Favorites" : "Add to Favorites"}
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
 
-        {/* Additional Space */}
         <View style={styles.bottomPadding} />
       </View>
     </ScrollView>
@@ -395,11 +439,12 @@ const styles = StyleSheet.create({
   backButton: {
     marginTop: spacing.md,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
   },
   backButtonText: {
     fontWeight: "600",
+    textAlign: "center",
   },
   headerContainer: {
     flexDirection: "row",
@@ -422,12 +467,17 @@ const styles = StyleSheet.create({
   favouriteButton: {
     padding: spacing.sm,
   },
-  favouriteButtonAnimating: {
-    transform: [{ scale: 1.2 }],
+  backdropContainer: {
+    position: "relative",
+    width: screenWidth,
+    height: 220,
   },
   backdropImage: {
-    width: screenWidth,
-    height: 200,
+    width: "100%",
+    height: "100%",
+  },
+  backdropOverlay: {
+    ...StyleSheet.absoluteFillObject,
   },
   contentContainer: {
     paddingHorizontal: spacing.lg,
@@ -435,43 +485,48 @@ const styles = StyleSheet.create({
   },
   posterSection: {
     flexDirection: "row",
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   posterImage: {
-    width: 100,
-    height: 150,
-    borderRadius: borderRadius.md,
-    marginRight: spacing.md,
+    width: 110,
+    height: 165,
+    borderRadius: borderRadius.lg,
+    marginRight: spacing.lg,
     ...shadows.medium,
     borderWidth: 1,
   },
   keyInfo: {
     flex: 1,
     justifyContent: "flex-start",
-    paddingTop: spacing.sm,
+    gap: spacing.md,
   },
   ratingContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: spacing.md,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    gap: spacing.sm,
   },
   ratingText: {
     fontSize: fontSizes.lg,
     fontWeight: "bold",
-    marginLeft: spacing.xs,
   },
   ratingCount: {
-    fontSize: fontSizes.sm,
-    marginLeft: spacing.xs,
+    fontSize: fontSizes.xs,
   },
-  yearContainer: {
+  metaBox: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    gap: spacing.sm,
   },
-  yearText: {
-    fontSize: fontSizes.md,
-    marginLeft: spacing.xs,
+  metaText: {
+    fontSize: fontSizes.sm,
+    fontWeight: "500",
   },
   titleSection: {
     marginBottom: spacing.lg,
@@ -488,30 +543,23 @@ const styles = StyleSheet.create({
   genresSection: {
     marginBottom: spacing.lg,
   },
-  genresList: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  genreTag: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.round,
-  },
   genreText: {
     fontSize: fontSizes.sm,
     fontWeight: "500",
+    lineHeight: 20,
   },
-  statsRow: {
+  statsGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
     gap: spacing.md,
+    flexWrap: "wrap",
   },
   statBox: {
     flex: 1,
+    minWidth: "30%",
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.lg,
     borderRadius: borderRadius.md,
     alignItems: "center",
     ...shadows.small,
@@ -526,7 +574,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: spacing.xs,
   },
-  overviewSection: {
+  section: {
     marginBottom: spacing.lg,
   },
   sectionTitle: {
@@ -539,51 +587,36 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlign: "justify",
   },
-  productionSection: {
-    marginBottom: spacing.lg,
-  },
   companyList: {
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   companyItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    gap: spacing.md,
   },
   companyName: {
-    fontSize: fontSizes.md,
-    marginLeft: spacing.md,
-  },
-  popularitySection: {
-    marginBottom: spacing.lg,
-  },
-  popularityBar: {
-    height: 8,
-    borderRadius: borderRadius.md,
-    overflow: "hidden",
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-  },
-  popularityFill: {
-    height: "100%",
-    borderRadius: borderRadius.md,
-  },
-  popularityText: {
     fontSize: fontSizes.sm,
+    fontWeight: "500",
   },
   favouriteCTA: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.xl,
     marginBottom: spacing.lg,
-    ...shadows.medium,
+    ...shadows.large,
+    gap: spacing.sm,
   },
   favouriteCTAText: {
     fontSize: fontSizes.md,
-    fontWeight: "600",
-    marginLeft: spacing.sm,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   bottomPadding: {
     height: spacing.xl,

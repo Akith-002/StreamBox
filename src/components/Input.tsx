@@ -8,12 +8,13 @@ import {
   KeyboardTypeOptions,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useTheme } from "../hooks/useTheme";
 import {
-  lightColors,
   spacing,
   borderRadius,
   fontSizes,
   componentSizes,
+  shadows,
 } from "../constants/theme";
 
 interface InputProps extends TextInputProps {
@@ -30,34 +31,50 @@ export default function Input({
   touched,
   ...textInputProps
 }: InputProps) {
+  const { colors } = useTheme();
   const hasError = touched && error;
 
   return (
     <View style={styles.container}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && (
+        <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
+      )}
 
       <View
-        style={[styles.inputContainer, hasError && styles.inputContainerError]}
+        style={[
+          styles.inputContainer,
+          {
+            backgroundColor: colors.inputBackground,
+            borderColor: hasError ? colors.error : colors.border,
+          },
+          hasError && styles.inputContainerError,
+        ]}
       >
         {icon && (
           <Feather
             name={icon}
             size={20}
-            color={hasError ? lightColors.error : lightColors.textSecondary}
+            color={hasError ? colors.error : colors.textSecondary}
             style={styles.icon}
           />
         )}
         <TextInput
-          style={[styles.input, icon && styles.inputWithIcon]}
-          placeholderTextColor={lightColors.textLight}
+          style={[
+            styles.input,
+            icon && styles.inputWithIcon,
+            { color: colors.text },
+          ]}
+          placeholderTextColor={colors.textLight}
           {...textInputProps}
         />
       </View>
 
       {hasError && (
         <View style={styles.errorContainer}>
-          <Feather name="alert-circle" size={14} color={lightColors.error} />
-          <Text style={styles.errorText}>{error}</Text>
+          <Feather name="alert-circle" size={14} color={colors.error} />
+          <Text style={[styles.errorText, { color: colors.error }]}>
+            {error}
+          </Text>
         </View>
       )}
     </View>
@@ -66,36 +83,32 @@ export default function Input({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
     width: "100%",
   },
   label: {
     fontSize: fontSizes.sm,
     fontWeight: "600" as "600",
-    color: lightColors.text,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: lightColors.inputBackground,
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: lightColors.border,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1.5,
     height: componentSizes.inputHeight,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
+    ...shadows.small,
   },
   inputContainerError: {
-    borderColor: lightColors.error,
-    borderWidth: 1.5,
+    borderWidth: 2,
   },
   icon: {
-    marginRight: spacing.sm,
+    marginRight: spacing.md,
   },
   input: {
     flex: 1,
     fontSize: fontSizes.md,
-    color: lightColors.text,
     height: "100%",
   },
   inputWithIcon: {
@@ -104,12 +117,11 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
     paddingLeft: spacing.xs,
   },
   errorText: {
     fontSize: fontSizes.xs,
-    color: lightColors.error,
     marginLeft: spacing.xs,
   },
 });
