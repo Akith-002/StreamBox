@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,12 +15,14 @@ import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   removeFavourite,
-  selectFavouriteMovies,
+  removeFavouriteTV,
+  selectAllFavourites,
 } from "../store/features/favouritesSlice";
 import { useTheme } from "../hooks/useTheme";
 import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
 import { RootState } from "../store/store";
+import { isMovie, isTVShow } from "../types/Movie";
 
 const screenWidth = Dimensions.get("window").width;
 const cardWidth = (screenWidth - spacing.lg * 3) / 2;
@@ -29,37 +31,73 @@ export default function FavouritesScreen() {
   const navigation = useNavigation<any>();
   const dispatch = useDispatch();
   const { colors } = useTheme();
-  const favouriteMovies = useSelector(selectFavouriteMovies);
-  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
+  const allFavourites = useSelector(selectAllFavourites);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
-  const handleMoviePress = (movieId: number) => {
-    navigation.navigate(
-      "HomeTab" as never,
-      {
-        screen: "Details",
-        params: { movieId },
-      } as never
-    );
+  useEffect(() => {
+    console.log("Favourites updated:", allFavourites.length, allFavourites);
+  }, [allFavourites]);
+
+  const handleItemPress = (item: any) => {
+    if (item.mediaType === "movie") {
+      navigation.navigate(
+        "HomeTab" as never,
+        {
+          screen: "Details",
+          params: { movieId: item.id },
+        } as never
+      );
+    } else if (item.mediaType === "tv") {
+      navigation.navigate(
+        "HomeTab" as never,
+        {
+          screen: "TVDetails",
+          params: { tvId: item.id },
+        } as never
+      );
+    }
   };
 
-  const handleRemove = (movieId: number) => {
-    setDeletingIds((prev) => new Set(prev).add(movieId));
+  const handleRemove = (id: number, mediaType: "movie" | "tv") => {
+    const key = `${mediaType}-${id}`;
+    setDeletingIds((prev) => new Set(prev).add(key));
     setTimeout(() => {
-      dispatch(removeFavourite(movieId));
+      if (mediaType === "movie") {
+        dispatch(removeFavourite(id));
+      } else {
+        dispatch(removeFavouriteTV(id));
+      }
       setDeletingIds((prev) => {
         const next = new Set(prev);
-        next.delete(movieId);
+        next.delete(key);
         return next;
       });
     }, 300);
   };
 
-  const renderMovieCard = ({ item, index }: { item: any; index: number }) => {
-    const posterUri = item.poster_path
-      ? `${TMDB_IMAGE_BASE_URL}${item.poster_path}`
+  const renderFavouriteCard = ({
+    item,
+    index,
+  }: {
+    item: any;
+    index: number;
+  }) => {
+    const data = item.data;
+    const posterUri = data.poster_path
+      ? `${TMDB_IMAGE_BASE_URL}${data.poster_path}`
       : undefined;
 
-    const isDeleting = deletingIds.has(item.id);
+    const key = `${item.mediaType}-${item.id}`;
+    const isDeleting = deletingIds.has(key);
+
+    const title = isMovie(data) ? data.title : isTVShow(data) ? data.name : "";
+    const date = isMovie(data)
+      ? data.release_date
+      : isTVShow(data)
+      ? data.first_air_date
+      : "";
+    const year = date ? date.slice(0, 4) : "";
+    const icon = item.mediaType === "movie" ? "film" : "tv";
 
     return (
       <Animated.View
@@ -72,7 +110,7 @@ export default function FavouritesScreen() {
       >
         <TouchableOpacity
           style={styles.movieCard}
-          onPress={() => handleMoviePress(item.id)}
+          onPress={() => handleItemPress(item)}
           activeOpacity={0.7}
         >
           {/* Poster Container with Glassmorphism */}
@@ -86,13 +124,22 @@ export default function FavouritesScreen() {
                 end={{ x: 1, y: 1 }}
                 style={styles.posterImage}
               >
-                <Feather name="film" size={40} color={colors.textLight} />
+                <Feather
+                  name={icon as any}
+                  size={40}
+                  color={colors.textLight}
+                />
               </LinearGradient>
             )}
 
+            {/* Media Type Badge */}
+            <View style={styles.mediaTypeBadge}>
+              <Feather name={icon as any} size={12} color="#FFFFFF" />
+            </View>
+
             {/* Delete Button with Glassmorphism */}
             <TouchableOpacity
-              onPress={() => handleRemove(item.id)}
+              onPress={() => handleRemove(item.id, item.mediaType)}
               style={styles.deleteButtonContainer}
             >
               <View
@@ -112,7 +159,7 @@ export default function FavouritesScreen() {
               style={[styles.movieTitle, { color: colors.text }]}
               numberOfLines={2}
             >
-              {item.title}
+              {title}
             </Text>
 
             {/* Rating Badge with Gradient */}
@@ -125,14 +172,14 @@ export default function FavouritesScreen() {
               >
                 <Feather name="star" size={10} color="#FFF" />
                 <Text style={styles.ratingText}>
-                  {item.vote_average?.toFixed(1) || "N/A"}
+                  {data.vote_average?.toFixed(1) || "N/A"}
                 </Text>
               </LinearGradient>
-              {item.release_date && (
+              {year && (
                 <Text
                   style={[styles.yearText, { color: colors.textSecondary }]}
                 >
-                  {item.release_date.slice(0, 4)}
+                  {year}
                 </Text>
               )}
             </View>
@@ -166,7 +213,7 @@ export default function FavouritesScreen() {
           No Favorites Yet
         </Text>
         <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-          Start adding movies to your favorites to see them here
+          Start adding movies and TV shows to your favorites to see them here
         </Text>
 
         {/* Gradient Button */}
@@ -181,7 +228,7 @@ export default function FavouritesScreen() {
             style={styles.browseButton}
           >
             <Feather name="search" size={18} color="#FFFFFF" />
-            <Text style={styles.browseButtonText}>Browse Movies</Text>
+            <Text style={styles.browseButtonText}>Browse Content</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -197,27 +244,27 @@ export default function FavouritesScreen() {
             My Favorites
           </Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {favouriteMovies.length} saved{" "}
-            {favouriteMovies.length === 1 ? "movie" : "movies"}
+            {allFavourites.length} saved{" "}
+            {allFavourites.length === 1 ? "item" : "items"}
           </Text>
         </View>
-        {favouriteMovies.length > 0 && (
+        {allFavourites.length > 0 && (
           <LinearGradient
             colors={[colors.primary, colors.accent]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.badge}
           >
-            <Text style={styles.badgeText}>{favouriteMovies.length}</Text>
+            <Text style={styles.badgeText}>{allFavourites.length}</Text>
           </LinearGradient>
         )}
       </View>
 
       {/* Grid List */}
       <FlatList
-        data={favouriteMovies}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderMovieCard}
+        data={allFavourites}
+        keyExtractor={(item) => `${item.mediaType}-${item.id}`}
+        renderItem={renderFavouriteCard}
         numColumns={2}
         columnWrapperStyle={styles.columnWrapper}
         contentContainerStyle={styles.listContent}
@@ -306,6 +353,16 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     borderRadius: borderRadius.round,
     padding: spacing.lg,
+  },
+  mediaTypeBadge: {
+    position: "absolute",
+    top: spacing.sm,
+    left: spacing.sm,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: borderRadius.md,
+    zIndex: 10,
   },
   deleteButtonContainer: {
     position: "absolute",

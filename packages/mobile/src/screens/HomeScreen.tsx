@@ -15,11 +15,16 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
-import { useGetTrendingMoviesQuery } from "../api/tmdbApi";
+import {
+  useGetTrendingMoviesQuery,
+  useGetTrendingTVQuery,
+  useGetTrendingAllQuery,
+} from "../api/tmdbApi";
 import { useTheme } from "../hooks/useTheme";
 import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
-import { Movie } from "../types/Movie";
+import { Movie, TVShow, MediaItem, isMovie, isTVShow } from "../types/Movie";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
+import MediaCard from "../components/MediaCard";
 
 const HERO_ROTATION_INTERVAL = 5000;
 const screenWidth = Dimensions.get("window").width;
@@ -27,8 +32,13 @@ const screenWidth = Dimensions.get("window").width;
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
-  const { data, error, isLoading, refetch } =
-    useGetTrendingMoviesQuery(undefined);
+  const {
+    data: allData,
+    error,
+    isLoading,
+    refetch,
+  } = useGetTrendingAllQuery("week");
+  const { data: tvData } = useGetTrendingTVQuery("week");
 
   const [heroIndex, setHeroIndex] = useState(0);
   const [nextHeroIndex, setNextHeroIndex] = useState(0);
@@ -48,14 +58,19 @@ export default function HomeScreen() {
     };
   }, [fadeAnim]);
 
-  const trendingMovies = data?.results ?? [];
-  const heroMovies = trendingMovies.slice(0, 5);
-  const currentMovie = heroMovies[heroIndex];
-  const nextMovie = heroMovies[nextHeroIndex];
-  const topMovies = trendingMovies.slice(5, 10);
-  const popularMovies = trendingMovies.slice(10, 15);
+  const trendingAll = allData?.results ?? [];
+  const trendingMovies = trendingAll
+    .filter((item: MediaItem) => isMovie(item))
+    .slice(0, 10);
+  const trendingTV = tvData?.results ?? [];
 
-  const changeHeroMovie = (newIndex: number) => {
+  const heroItems = trendingAll.slice(0, 5);
+  const currentItem = heroItems[heroIndex];
+  const nextItem = heroItems[nextHeroIndex];
+  const topMovies = trendingMovies.slice(5, 10);
+  const popularTV = trendingTV.slice(5, 10);
+
+  const changeHeroItem = (newIndex: number) => {
     if (newIndex === heroIndex) return;
 
     setNextHeroIndex(newIndex);
@@ -73,21 +88,28 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    if (heroMovies.length === 0) return;
+    if (heroItems.length === 0) return;
 
     const interval = setInterval(() => {
-      const nextIndex = (heroIndex + 1) % heroMovies.length;
-      changeHeroMovie(nextIndex);
+      const nextIndex = (heroIndex + 1) % heroItems.length;
+      changeHeroItem(nextIndex);
     }, HERO_ROTATION_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [heroIndex, heroMovies.length]);
+  }, [heroIndex, heroItems.length]);
 
-  const handleMoviePress = (movieId: number) => {
-    navigation.navigate("HomeTab", {
-      screen: "Details",
-      params: { movieId },
-    });
+  const handleMediaPress = (id: number, mediaType: "movie" | "tv") => {
+    if (mediaType === "movie") {
+      navigation.navigate("HomeTab", {
+        screen: "Details",
+        params: { movieId: id },
+      });
+    } else {
+      navigation.navigate("HomeTab", {
+        screen: "TVDetails",
+        params: { tvId: id },
+      });
+    }
   };
 
   if (isLoading) {
@@ -114,124 +136,87 @@ export default function HomeScreen() {
     );
   }
 
-  const renderHeroContent = (movie: Movie) => (
-    <>
-      <LinearGradient
-        colors={["rgba(15, 23, 42, 0)", "rgba(15, 23, 42, 0.9)"]}
-        style={styles.heroGradient}
-      />
-      <View style={styles.heroContent}>
-        <Text
-          style={[styles.heroTitle, { color: "#FFFFFF" }]}
-          numberOfLines={2}
-        >
-          {movie.title}
-        </Text>
-        <View style={styles.heroMeta}>
-          <LinearGradient
-            colors={[colors.primary, colors.accent]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.heroRating}
-          >
-            <Feather name="star" size={14} color="#FFFFFF" />
-            <Text style={styles.heroRatingText}>
-              {movie.vote_average.toFixed(1)}
-            </Text>
-          </LinearGradient>
-          <Text style={styles.heroYear}>
-            {movie.release_date ? movie.release_date.slice(0, 4) : ""}
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => handleMoviePress(movie.id)}
-          activeOpacity={0.85}
-        >
-          <LinearGradient
-            colors={[colors.primary, colors.accent]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.heroButton}
-          >
-            <Feather name="play" size={18} color="#FFFFFF" />
-            <Text style={styles.heroButtonText}>Watch Now</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
-    </>
-  );
-
-  const renderHorizontalMovieCard = ({ item }: { item: Movie }) => {
-    const posterUri = item.poster_path
-      ? `${TMDB_IMAGE_BASE_URL}${item.poster_path}`
-      : undefined;
+  const renderHeroContent = (item: MediaItem) => {
+    const title = isMovie(item) ? item.title : isTVShow(item) ? item.name : "";
+    const date = isMovie(item)
+      ? item.release_date
+      : isTVShow(item)
+      ? item.first_air_date
+      : "";
+    const year = date ? date.slice(0, 4) : "";
+    const voteAverage = isMovie(item) || isTVShow(item) ? item.vote_average : 0;
+    const mediaType = isMovie(item) ? "movie" : "tv";
 
     return (
-      <TouchableOpacity
-        style={styles.horizontalCard}
-        onPress={() => handleMoviePress(item.id)}
-        activeOpacity={0.7}
-      >
-        {posterUri ? (
-          <View style={styles.posterWrapper}>
-            <Image
-              source={{ uri: posterUri }}
-              style={styles.horizontalPoster}
-            />
-            <View style={styles.posterGlassOverlay}>
-              <LinearGradient
-                colors={["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.8)"]}
-                style={styles.posterGradient}
-              >
-                <View style={styles.ratingBadgeSmall}>
-                  <Feather name="star" size={10} color="#FFD700" />
-                  <Text style={styles.ratingSmallText}>
-                    {item.vote_average.toFixed(1)}
-                  </Text>
-                </View>
-              </LinearGradient>
-            </View>
-          </View>
-        ) : (
-          <LinearGradient
-            colors={[`${colors.primary}30`, `${colors.accent}30`]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.horizontalPoster}
+      <>
+        <LinearGradient
+          colors={["rgba(15, 23, 42, 0)", "rgba(15, 23, 42, 0.9)"]}
+          style={styles.heroGradient}
+        />
+        <View style={styles.heroContent}>
+          <Text
+            style={[styles.heroTitle, { color: "#FFFFFF" }]}
+            numberOfLines={2}
           >
-            <Feather name="film" size={32} color={colors.textLight} />
-          </LinearGradient>
-        )}
-        <Text
-          style={[styles.horizontalCardTitle, { color: colors.text }]}
-          numberOfLines={2}
-        >
-          {item.title}
-        </Text>
-      </TouchableOpacity>
+            {title}
+          </Text>
+          <View style={styles.heroMeta}>
+            <LinearGradient
+              colors={[colors.primary, colors.accent]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.heroRating}
+            >
+              <Feather name="star" size={14} color="#FFFFFF" />
+              <Text style={styles.heroRatingText}>
+                {voteAverage.toFixed(1)}
+              </Text>
+            </LinearGradient>
+            <Text style={styles.heroYear}>{year}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => handleMediaPress(item.id, mediaType)}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={[colors.primary, colors.accent]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.heroButton}
+            >
+              <Feather name="play" size={18} color="#FFFFFF" />
+              <Text style={styles.heroButtonText}>Watch Now</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </>
     );
   };
+
+  const renderMediaCard = ({ item }: { item: MediaItem }) => (
+    <MediaCard item={item as Movie | TVShow} onPress={handleMediaPress} />
+  );
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
       showsVerticalScrollIndicator={false}
     >
-      {/* Featured Movie Hero */}
-      {currentMovie && (
+      {/* Featured Hero */}
+      {currentItem && (
         <View style={styles.heroSection}>
           {/* Base Layer */}
           <View style={StyleSheet.absoluteFill}>
             <ImageBackground
               source={{
-                uri: currentMovie.backdrop_path
-                  ? `${TMDB_IMAGE_BASE_URL}${currentMovie.backdrop_path}`
-                  : `${TMDB_IMAGE_BASE_URL}${currentMovie.poster_path}`,
+                uri: currentItem.backdrop_path
+                  ? `${TMDB_IMAGE_BASE_URL}${currentItem.backdrop_path}`
+                  : `${TMDB_IMAGE_BASE_URL}${currentItem.poster_path}`,
               }}
               style={styles.heroImage}
               imageStyle={styles.heroImageStyle}
             >
-              {renderHeroContent(currentMovie)}
+              {renderHeroContent(currentItem)}
             </ImageBackground>
           </View>
 
@@ -239,27 +224,27 @@ export default function HomeScreen() {
           <Animated.View
             style={[StyleSheet.absoluteFill, { opacity: fadeAnim, zIndex: 1 }]}
           >
-            {nextMovie && (
+            {nextItem && (
               <ImageBackground
                 source={{
-                  uri: nextMovie.backdrop_path
-                    ? `${TMDB_IMAGE_BASE_URL}${nextMovie.backdrop_path}`
-                    : `${TMDB_IMAGE_BASE_URL}${nextMovie.poster_path}`,
+                  uri: nextItem.backdrop_path
+                    ? `${TMDB_IMAGE_BASE_URL}${nextItem.backdrop_path}`
+                    : `${TMDB_IMAGE_BASE_URL}${nextItem.poster_path}`,
                 }}
                 style={styles.heroImage}
                 imageStyle={styles.heroImageStyle}
               >
-                {renderHeroContent(nextMovie)}
+                {renderHeroContent(nextItem)}
               </ImageBackground>
             )}
           </Animated.View>
 
           {/* Carousel Indicators */}
           <View style={[styles.carouselIndicators, { zIndex: 2 }]}>
-            {heroMovies.map((_: Movie, index: number) => (
+            {heroItems.map((_: MediaItem, index: number) => (
               <TouchableOpacity
                 key={index}
-                onPress={() => changeHeroMovie(index)}
+                onPress={() => changeHeroItem(index)}
                 activeOpacity={0.7}
                 style={[
                   styles.indicator,
@@ -282,12 +267,12 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* Trending Now Section */}
+      {/* Trending Movies Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Trending Now
+              Trending Movies
             </Text>
             <Text style={[styles.sectionSubtitle, { color: colors.textLight }]}>
               This week's hottest movies
@@ -300,21 +285,48 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
         <FlatList
-          data={heroMovies}
+          data={trendingMovies.slice(0, 10)}
           horizontal
           showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => `trending-${item.id}`}
-          renderItem={renderHorizontalMovieCard}
+          keyExtractor={(item) => `trending-movie-${item.id}`}
+          renderItem={renderMediaCard}
           contentContainerStyle={styles.horizontalList}
         />
       </View>
 
-      {/* Top Rated Section */}
+      {/* Trending TV Shows Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Top Rated
+              Trending TV Shows
+            </Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textLight }]}>
+              Popular series this week
+            </Text>
+          </View>
+          <TouchableOpacity>
+            <Text style={[styles.seeMore, { color: colors.primary }]}>
+              See all
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <FlatList
+          data={trendingTV.slice(0, 10)}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(item) => `trending-tv-${item.id}`}
+          renderItem={renderMediaCard}
+          contentContainerStyle={styles.horizontalList}
+        />
+      </View>
+
+      {/* Top Rated Movies Section */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Top Rated Movies
             </Text>
             <Text style={[styles.sectionSubtitle, { color: colors.textLight }]}>
               Highest-rated films
@@ -330,18 +342,18 @@ export default function HomeScreen() {
           data={topMovies}
           horizontal
           showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => `top-${item.id}`}
-          renderItem={renderHorizontalMovieCard}
+          keyExtractor={(item) => `top-movie-${item.id}`}
+          renderItem={renderMediaCard}
           contentContainerStyle={styles.horizontalList}
         />
       </View>
 
-      {/* Popular Now Section */}
+      {/* Popular TV Shows Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Popular Now
+              Popular TV Shows
             </Text>
             <Text style={[styles.sectionSubtitle, { color: colors.textLight }]}>
               What people are watching
@@ -354,11 +366,11 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
         <FlatList
-          data={popularMovies}
+          data={popularTV}
           horizontal
           showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => `popular-${item.id}`}
-          renderItem={renderHorizontalMovieCard}
+          keyExtractor={(item) => `popular-tv-${item.id}`}
+          renderItem={renderMediaCard}
           contentContainerStyle={styles.horizontalList}
         />
       </View>

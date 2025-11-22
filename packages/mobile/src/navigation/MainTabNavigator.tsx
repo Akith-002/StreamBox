@@ -4,6 +4,9 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { Feather } from "@expo/vector-icons";
 import HomeScreen from "../screens/HomeScreen";
 import DetailsScreen from "../screens/DetailsScreen";
+import TVDetailsScreen from "../screens/TVDetailsScreen";
+import SearchScreen from "../screens/SearchScreen";
+import DiscoverScreen from "../screens/DiscoverScreen";
 import FavouritesScreen from "../screens/FavouritesScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import { useTheme } from "../hooks/useTheme";
@@ -21,6 +24,7 @@ function HomeStack() {
     >
       <Stack.Screen name="HomeList" component={HomeScreen} />
       <Stack.Screen name="Details" component={DetailsScreen} />
+      <Stack.Screen name="TVDetails" component={TVDetailsScreen} />
     </Stack.Navigator>
   );
 }
@@ -36,6 +40,10 @@ export default function MainTabNavigator() {
 
           if (route.name === "HomeTab") {
             iconName = "home";
+          } else if (route.name === "Search") {
+            iconName = "search";
+          } else if (route.name === "Discover") {
+            iconName = "compass";
           } else if (route.name === "Favourites") {
             iconName = "heart";
           } else if (route.name === "Profile") {
@@ -63,6 +71,8 @@ export default function MainTabNavigator() {
         component={HomeStack}
         options={{ title: "Home" }}
       />
+      <Tab.Screen name="Search" component={SearchScreen} />
+      <Tab.Screen name="Discover" component={DiscoverScreen} />
       <Tab.Screen name="Favourites" component={FavouritesScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>

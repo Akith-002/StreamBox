@@ -10,46 +10,44 @@ import {
   Dimensions,
   Alert,
   Animated,
+  FlatList,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
-import { useGetMovieDetailsQuery } from "../api/tmdbApi";
+import { useGetTVDetailsQuery } from "../api/tmdbApi";
 import {
-  addFavourite,
-  removeFavourite,
-  selectFavouriteMovies,
+  addFavouriteTV,
+  removeFavouriteTV,
+  selectFavouriteTV,
 } from "../store/features/favouritesSlice";
 import { useTheme } from "../hooks/useTheme";
 import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
-import { RootState } from "../store/store";
 
 const screenWidth = Dimensions.get("window").width;
 
-export default function DetailsScreen() {
+export default function TVDetailsScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const dispatch = useDispatch();
   const { colors } = useTheme();
-  const { movieId } = route.params;
-  const { data: movie, isLoading, error } = useGetMovieDetailsQuery(movieId);
+  const { tvId } = route.params;
+  const { data: show, isLoading, error } = useGetTVDetailsQuery(tvId);
 
   const [isFavouriteAnimating, setIsFavouriteAnimating] = useState(false);
   const heartScale = useRef(new Animated.Value(1)).current;
 
-  const favouriteMovies = useSelector(selectFavouriteMovies);
-  const isFavourite = movie
-    ? favouriteMovies.some((m) => m.id === movie.id)
-    : false;
+  const favouriteTV = useSelector(selectFavouriteTV);
+  const isFavourite = show ? favouriteTV.some((s) => s.id === show.id) : false;
 
   const handleGoBack = () => {
     navigation.goBack();
   };
 
   const handleFavouritePress = async () => {
-    if (!movie) return;
+    if (!show) return;
 
     setIsFavouriteAnimating(true);
 
@@ -67,11 +65,11 @@ export default function DetailsScreen() {
     ]).start(() => setIsFavouriteAnimating(false));
 
     if (isFavourite) {
-      dispatch(removeFavourite(movie.id));
-      Alert.alert("Removed", `${movie.title} removed from favorites`);
+      dispatch(removeFavouriteTV(show.id));
+      Alert.alert("Removed", `${show.name} removed from favorites`);
     } else {
-      dispatch(addFavourite(movie));
-      Alert.alert("Added", `${movie.title} added to favorites`);
+      dispatch(addFavouriteTV(show));
+      Alert.alert("Added", `${show.name} added to favorites`);
     }
   };
 
@@ -86,12 +84,12 @@ export default function DetailsScreen() {
     );
   }
 
-  if (error || !movie) {
+  if (error || !show) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <Feather name="alert-triangle" size={48} color={colors.error} />
         <Text style={[styles.errorText, { color: colors.error }]}>
-          Unable to load movie details
+          Unable to load TV show details
         </Text>
         <TouchableOpacity
           onPress={handleGoBack}
@@ -105,21 +103,65 @@ export default function DetailsScreen() {
     );
   }
 
-  const posterImageUrl = movie.poster_path
-    ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}`
+  const posterImageUrl = show.poster_path
+    ? `${TMDB_IMAGE_BASE_URL}${show.poster_path}`
     : null;
 
-  const backdropImageUrl = movie.backdrop_path
-    ? `${TMDB_IMAGE_BASE_URL}${movie.backdrop_path}`
+  const backdropImageUrl = show.backdrop_path
+    ? `${TMDB_IMAGE_BASE_URL}${show.backdrop_path}`
     : null;
 
-  const releaseYear = movie.release_date
-    ? new Date(movie.release_date).getFullYear()
+  const firstAirYear = show.first_air_date
+    ? new Date(show.first_air_date).getFullYear()
     : "N/A";
 
-  const genreString = movie.genres
-    ? movie.genres.map((g: any) => g.name).join(" • ")
+  const genreString = show.genres
+    ? show.genres.map((g: any) => g.name).join(" • ")
     : "N/A";
+
+  const renderSeason = ({ item }: { item: any }) => {
+    const seasonPoster = item.poster_path
+      ? `${TMDB_IMAGE_BASE_URL}${item.poster_path}`
+      : null;
+
+    return (
+      <View
+        style={[
+          styles.seasonCard,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      >
+        {seasonPoster ? (
+          <Image source={{ uri: seasonPoster }} style={styles.seasonPoster} />
+        ) : (
+          <LinearGradient
+            colors={[`${colors.primary}30`, `${colors.accent}30`]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.seasonPoster}
+          >
+            <Feather name="tv" size={24} color={colors.textLight} />
+          </LinearGradient>
+        )}
+        <View style={styles.seasonInfo}>
+          <Text
+            style={[styles.seasonName, { color: colors.text }]}
+            numberOfLines={1}
+          >
+            {item.name}
+          </Text>
+          <Text style={[styles.seasonMeta, { color: colors.textLight }]}>
+            {item.episode_count} episodes
+          </Text>
+          {item.air_date ? (
+            <Text style={[styles.seasonMeta, { color: colors.textLight }]}>
+              {new Date(item.air_date).getFullYear()}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+    );
+  };
 
   return (
     <ScrollView
@@ -143,7 +185,7 @@ export default function DetailsScreen() {
           style={[styles.headerTitle, { color: colors.text }]}
           numberOfLines={1}
         >
-          {movie.title}
+          {show.name}
         </Text>
         <Animated.View
           style={[
@@ -212,17 +254,17 @@ export default function DetailsScreen() {
               <Feather name="star" size={18} color={colors.primary} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.ratingText, { color: colors.text }]}>
-                  {movie.vote_average?.toFixed(1) || "N/A"}
+                  {show.vote_average?.toFixed(1) || "N/A"}
                 </Text>
                 <Text
                   style={[styles.ratingCount, { color: colors.textSecondary }]}
                 >
-                  ({movie.vote_count?.toLocaleString() || 0})
+                  ({show.vote_count?.toLocaleString() || 0})
                 </Text>
               </View>
             </LinearGradient>
 
-            {/* Year */}
+            {/* First Air Date */}
             <View
               style={[
                 styles.metaBox,
@@ -234,38 +276,36 @@ export default function DetailsScreen() {
             >
               <Feather name="calendar" size={16} color={colors.info} />
               <Text style={[styles.metaText, { color: colors.text }]}>
-                {releaseYear}
+                {firstAirYear}
               </Text>
             </View>
 
-            {/* Runtime */}
-            {movie.runtime ? (
-              <View
-                style={[
-                  styles.metaBox,
-                  {
-                    backgroundColor: `${colors.primary}10`,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <Feather name="clock" size={16} color={colors.info} />
-                <Text style={[styles.metaText, { color: colors.text }]}>
-                  {movie.runtime} min
-                </Text>
-              </View>
-            ) : null}
+            {/* Seasons & Episodes */}
+            <View
+              style={[
+                styles.metaBox,
+                {
+                  backgroundColor: `${colors.primary}10`,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Feather name="tv" size={16} color={colors.info} />
+              <Text style={[styles.metaText, { color: colors.text }]}>
+                {show.number_of_seasons} S • {show.number_of_episodes} E
+              </Text>
+            </View>
           </View>
         </View>
 
         {/* Title & Tagline */}
         <View style={styles.titleSection}>
           <Text style={[styles.title, { color: colors.text }]}>
-            {movie.title}
+            {show.name}
           </Text>
-          {movie.tagline ? (
+          {show.tagline ? (
             <Text style={[styles.tagline, { color: colors.textLight }]}>
-              "{movie.tagline}"
+              "{show.tagline}"
             </Text>
           ) : null}
         </View>
@@ -281,45 +321,41 @@ export default function DetailsScreen() {
 
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
-          {movie.budget && movie.budget > 0 ? (
-            <View
-              style={[
-                styles.statBox,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              <Feather name="dollar-sign" size={20} color={colors.primary} />
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                Budget
-              </Text>
-              <Text style={[styles.statValue, { color: colors.text }]}>
-                ${(movie.budget / 1000000).toFixed(1)}M
-              </Text>
-            </View>
-          ) : null}
+          <View
+            style={[
+              styles.statBox,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Feather name="layers" size={20} color={colors.primary} />
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+              Seasons
+            </Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>
+              {show.number_of_seasons || 0}
+            </Text>
+          </View>
 
-          {movie.revenue && movie.revenue > 0 ? (
-            <View
-              style={[
-                styles.statBox,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              <Feather name="trending-up" size={20} color={colors.success} />
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                Revenue
-              </Text>
-              <Text style={[styles.statValue, { color: colors.text }]}>
-                ${(movie.revenue / 1000000).toFixed(1)}M
-              </Text>
-            </View>
-          ) : null}
+          <View
+            style={[
+              styles.statBox,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Feather name="film" size={20} color={colors.success} />
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+              Episodes
+            </Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>
+              {show.number_of_episodes || 0}
+            </Text>
+          </View>
 
           <View
             style={[
@@ -335,13 +371,55 @@ export default function DetailsScreen() {
               Popularity
             </Text>
             <Text style={[styles.statValue, { color: colors.text }]}>
-              {movie.popularity?.toFixed(0) || "N/A"}
+              {show.popularity?.toFixed(0) || "N/A"}
             </Text>
           </View>
         </View>
 
+        {/* Status */}
+        {show.status ? (
+          <View
+            style={[
+              styles.statusBadge,
+              {
+                backgroundColor:
+                  show.status === "Returning Series"
+                    ? `${colors.success}20`
+                    : `${colors.warning}20`,
+                borderColor:
+                  show.status === "Returning Series"
+                    ? colors.success
+                    : colors.warning,
+              },
+            ]}
+          >
+            <Feather
+              name="info"
+              size={16}
+              color={
+                show.status === "Returning Series"
+                  ? colors.success
+                  : colors.warning
+              }
+            />
+            <Text
+              style={[
+                styles.statusText,
+                {
+                  color:
+                    show.status === "Returning Series"
+                      ? colors.success
+                      : colors.warning,
+                },
+              ]}
+            >
+              {show.status}
+            </Text>
+          </View>
+        ) : null}
+
         {/* Overview */}
-        {movie.overview ? (
+        {show.overview ? (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               Synopsis
@@ -349,32 +427,49 @@ export default function DetailsScreen() {
             <Text
               style={[styles.overviewText, { color: colors.textSecondary }]}
             >
-              {movie.overview}
+              {show.overview}
             </Text>
           </View>
         ) : null}
 
-        {/* Production Companies */}
-        {movie.production_companies && movie.production_companies.length > 0 ? (
+        {/* Seasons */}
+        {show.seasons && show.seasons.length > 0 ? (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Production
+              Seasons ({show.seasons.length})
             </Text>
-            <View style={styles.companyList}>
-              {movie.production_companies.slice(0, 3).map((company: any) => (
+            <FlatList
+              data={show.seasons}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={renderSeason}
+              contentContainerStyle={styles.seasonsList}
+            />
+          </View>
+        ) : null}
+
+        {/* Networks */}
+        {show.networks && show.networks.length > 0 ? (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Network
+            </Text>
+            <View style={styles.networkList}>
+              {show.networks.slice(0, 3).map((network: any) => (
                 <View
-                  key={company.id}
+                  key={network.id}
                   style={[
-                    styles.companyItem,
+                    styles.networkItem,
                     {
                       backgroundColor: colors.card,
                       borderColor: colors.border,
                     },
                   ]}
                 >
-                  <Feather name="briefcase" size={16} color={colors.primary} />
-                  <Text style={[styles.companyName, { color: colors.text }]}>
-                    {company.name}
+                  <Feather name="tv" size={16} color={colors.primary} />
+                  <Text style={[styles.networkName, { color: colors.text }]}>
+                    {network.name}
                   </Text>
                 </View>
               ))}
@@ -546,7 +641,7 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
     gap: spacing.md,
     flexWrap: "wrap",
   },
@@ -569,6 +664,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: spacing.xs,
   },
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  statusText: {
+    fontSize: fontSizes.sm,
+    fontWeight: "600",
+  },
   section: {
     marginBottom: spacing.lg,
   },
@@ -582,10 +692,41 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlign: "justify",
   },
-  companyList: {
+  seasonsList: {
     gap: spacing.md,
   },
-  companyItem: {
+  seasonCard: {
+    flexDirection: "row",
+    width: 280,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    ...shadows.small,
+    gap: spacing.md,
+  },
+  seasonPoster: {
+    width: 60,
+    height: 90,
+    borderRadius: borderRadius.md,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  seasonInfo: {
+    flex: 1,
+    justifyContent: "center",
+    gap: spacing.xs,
+  },
+  seasonName: {
+    fontSize: fontSizes.md,
+    fontWeight: "700",
+  },
+  seasonMeta: {
+    fontSize: fontSizes.sm,
+  },
+  networkList: {
+    gap: spacing.md,
+  },
+  networkItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: spacing.md,
@@ -594,7 +735,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.md,
   },
-  companyName: {
+  networkName: {
     fontSize: fontSizes.sm,
     fontWeight: "500",
   },
