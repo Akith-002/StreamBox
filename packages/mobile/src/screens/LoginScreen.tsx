@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import axios from "axios";
 import { useDispatch } from "react-redux";
 import { Feather } from "@expo/vector-icons";
 import { setCredentials } from "../store/features/authSlice";
@@ -26,13 +25,14 @@ import {
   borderRadius,
   SCREEN_HEIGHT,
 } from "../constants/theme";
-
 import { useTheme } from "../hooks/useTheme";
+import { useLoginMutation } from "../api/backendApi";
+import { saveToken, saveUser } from "../utils/secureStorage";
 
 export default function LoginScreen({ navigation }: { navigation: any }) {
   const dispatch = useDispatch();
   const { colors } = useTheme();
-  const [loading, setLoading] = useState(false);
+  const [login, { isLoading }] = useLoginMutation();
 
   const {
     control,
@@ -48,37 +48,29 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
   });
 
   const onSubmit = async (data: LoginCredentials) => {
-    setLoading(true);
     try {
-      const response = await axios.post(
-        "https://dummyjson.com/auth/login",
-        data,
-        {
-          headers: { "Content-Type": "application/json" },
-          timeout: 10000,
-        }
-      );
+      const result = await login(data).unwrap();
 
-      dispatch(
-        setCredentials({
-          user: response.data,
-          token: response.data.token,
-        })
-      );
+      // Save token and user to secure storage
+      await saveToken(result.token);
+      await saveUser(result.user);
+
+      // Update Redux state
+      dispatch(setCredentials(result));
+
+      // Navigation is handled automatically by RootNavigator
     } catch (error: any) {
       let errorMessage = "Login failed. Please try again.";
 
-      if (error.response?.status === 400) {
+      if (error.status === 401) {
         errorMessage = "Invalid username or password.";
-      } else if (error.code === "ECONNABORTED") {
-        errorMessage = "Connection timeout. Please check your internet.";
-      } else if (!error.response) {
+      } else if (error.originalStatus === 503) {
+        errorMessage = "Server is unavailable. Please try again later.";
+      } else if (!error.status) {
         errorMessage = "Network error. Please check your connection.";
       }
 
       Alert.alert("Login Error", errorMessage);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -116,7 +108,7 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
           </Text>
         </View>
 
-        {/* Demo Info Banner */}
+        {/* Info Banner */}
         <View
           style={[
             styles.demoBanner,
@@ -128,13 +120,10 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
           </View>
           <View style={styles.demoContent}>
             <Text style={[styles.demoTitle, { color: colors.text }]}>
-              Demo Credentials
+              Login with Email
             </Text>
             <Text style={[styles.demoText, { color: colors.textSecondary }]}>
-              username: <Text style={{ fontWeight: "bold" }}>emilys</Text>
-            </Text>
-            <Text style={[styles.demoText, { color: colors.textSecondary }]}>
-              password: <Text style={{ fontWeight: "bold" }}>emilyspass</Text>
+              Use your email address as username
             </Text>
           </View>
         </View>
@@ -151,9 +140,9 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
               control={control}
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
-                  label="Username"
-                  placeholder="Enter your username"
-                  icon="user"
+                  label="Email"
+                  placeholder="Enter your email"
+                  icon="mail"
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
@@ -161,6 +150,7 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
                   touched={touchedFields.username}
                   autoCapitalize="none"
                   autoCorrect={false}
+                  keyboardType="email-address"
                 />
               )}
             />
@@ -185,10 +175,10 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
             />
 
             <Button
-              title={loading ? "Signing In..." : "Sign In"}
+              title={isLoading ? "Signing In..." : "Sign In"}
               onPress={handleSubmit(onSubmit)}
-              loading={loading}
-              disabled={loading}
+              loading={isLoading}
+              disabled={isLoading}
             />
           </View>
         </View>
@@ -213,7 +203,7 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
           </Text>
           <TouchableOpacity
             onPress={() => navigation.navigate("Register")}
-            disabled={loading}
+            disabled={isLoading}
           >
             <Text style={[styles.signUpLink, { color: colors.primary }]}>
               Create Account

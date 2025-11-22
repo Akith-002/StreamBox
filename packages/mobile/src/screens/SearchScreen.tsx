@@ -13,10 +13,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
-import { useLazySearchMultiQuery } from "../api/tmdbApi";
+import { useSearchMoviesQuery } from "../api/backendApi";
+import { MovieDto } from "@streambox/shared";
 import { useTheme } from "../hooks/useTheme";
 import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
-import { MediaItem, isMovie, isTVShow, isPerson } from "../types/Movie";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
 
 const SEARCH_HISTORY_KEY = "@streambox_search_history";
@@ -26,11 +26,20 @@ export default function SearchScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<MediaItem[]>([]);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const [triggerSearch, { isLoading, isFetching }] = useLazySearchMultiQuery();
+  const {
+    data: searchData,
+    isLoading,
+    isFetching,
+  } = useSearchMoviesQuery(
+    { query: debouncedQuery, page: 1 },
+    { skip: !debouncedQuery || debouncedQuery.length < 2 }
+  );
+
+  const searchResults = searchData?.results || [];
 
   // Load search history on mount
   useEffect(() => {
@@ -96,13 +105,12 @@ export default function SearchScreen() {
   const handleSearch = useCallback(
     async (query: string, addToHistory = true) => {
       if (query.trim().length < 2) {
-        setSearchResults([]);
+        setDebouncedQuery("");
         return;
       }
 
       try {
-        const result = await triggerSearch({ query, page: 1 }).unwrap();
-        setSearchResults(result.results || []);
+        setDebouncedQuery(query);
 
         // Save to history after successful search
         if (addToHistory) {
@@ -110,10 +118,9 @@ export default function SearchScreen() {
         }
       } catch (error) {
         console.error("Search error:", error);
-        setSearchResults([]);
       }
     },
-    [triggerSearch, searchHistory]
+    [searchHistory]
   );
 
   const handleHistoryItemPress = (query: string) => {
@@ -154,62 +161,27 @@ export default function SearchScreen() {
     };
   }, []);
 
-  const handleItemPress = (item: MediaItem) => {
+  const handleItemPress = (item: MovieDto) => {
     // Save current search query to history when user taps a result
     if (searchQuery.trim().length >= 2) {
       saveToHistory(searchQuery);
     }
 
-    if (isMovie(item)) {
-      navigation.navigate("HomeTab", {
-        screen: "Details",
-        params: { movieId: item.id },
-      });
-    } else if (isTVShow(item)) {
-      navigation.navigate("HomeTab", {
-        screen: "TVDetails",
-        params: { tvId: item.id },
-      });
-    } else if (isPerson(item)) {
-      navigation.navigate("HomeTab", {
-        screen: "PersonDetails",
-        params: { personId: item.id },
-      });
-    }
+    navigation.navigate("HomeTab", {
+      screen: "Details",
+      params: { movieId: item.id },
+    });
   };
 
-  const renderSearchResult = ({ item }: { item: MediaItem }) => {
-    let title = "";
-    let subtitle = "";
-    let imageUri = "";
-    let icon = "film";
-
-    if (isMovie(item)) {
-      title = item.title;
-      subtitle = item.release_date
-        ? `Movie • ${item.release_date.slice(0, 4)}`
-        : "Movie";
-      imageUri = item.poster_path
-        ? `${TMDB_IMAGE_BASE_URL}${item.poster_path}`
-        : "";
-      icon = "film";
-    } else if (isTVShow(item)) {
-      title = item.name;
-      subtitle = item.first_air_date
-        ? `TV Show • ${item.first_air_date.slice(0, 4)}`
-        : "TV Show";
-      imageUri = item.poster_path
-        ? `${TMDB_IMAGE_BASE_URL}${item.poster_path}`
-        : "";
-      icon = "tv";
-    } else if (isPerson(item)) {
-      title = item.name;
-      subtitle = item.known_for_department || "Person";
-      imageUri = item.profile_path
-        ? `${TMDB_IMAGE_BASE_URL}${item.profile_path}`
-        : "";
-      icon = "user";
-    }
+  const renderSearchResult = ({ item }: { item: MovieDto }) => {
+    const title = item.title;
+    const subtitle = item.release_date
+      ? `Movie • ${item.release_date.slice(0, 4)}`
+      : "Movie";
+    const imageUri = item.poster_path
+      ? `${TMDB_IMAGE_BASE_URL}${item.poster_path}`
+      : "";
+    const icon = "film";
 
     return (
       <TouchableOpacity
@@ -242,14 +214,12 @@ export default function SearchScreen() {
           <Text style={[styles.resultSubtitle, { color: colors.textLight }]}>
             {subtitle}
           </Text>
-          {isMovie(item) || isTVShow(item) ? (
-            <View style={styles.resultMeta}>
-              <Feather name="star" size={12} color="#FFD700" />
-              <Text style={[styles.resultRating, { color: colors.text }]}>
-                {item.vote_average.toFixed(1)}
-              </Text>
-            </View>
-          ) : null}
+          <View style={styles.resultMeta}>
+            <Feather name="star" size={12} color="#FFD700" />
+            <Text style={[styles.resultRating, { color: colors.text }]}>
+              {item.vote_average.toFixed(1)}
+            </Text>
+          </View>
         </View>
         <Feather name="chevron-right" size={20} color={colors.textLight} />
       </TouchableOpacity>
@@ -281,7 +251,7 @@ export default function SearchScreen() {
           <TouchableOpacity
             onPress={() => {
               setSearchQuery("");
-              setSearchResults([]);
+              setDebouncedQuery("");
             }}
           >
             <Feather name="x-circle" size={20} color={colors.textLight} />

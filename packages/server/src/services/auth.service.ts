@@ -6,7 +6,7 @@ import { RegisterDto, LoginDto, AuthResponse } from "@streambox/shared";
 
 export class AuthService {
   async register(data: RegisterDto): Promise<AuthResponse> {
-    // Check if user exists
+    // Check if user exists by email
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email },
     });
@@ -33,8 +33,8 @@ export class AuthService {
 
     return {
       user: {
-        id: parseInt(user.id),
-        username: user.email.split("@")[0],
+        id: Number(user.id),
+        username: data.username || user.email.split("@")[0],
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -45,20 +45,20 @@ export class AuthService {
   }
 
   async login(data: LoginDto): Promise<AuthResponse> {
-    // Find user by username (email)
+    // Find user by email (username field contains email)
     const user = await prisma.user.findUnique({
       where: { email: data.username },
     });
 
     if (!user) {
-      throw new AppError(401, "Invalid email or password");
+      throw new AppError(401, "Invalid username or password");
     }
 
     // Verify password
     const isPasswordValid = await verifyPassword(user.password, data.password);
 
     if (!isPasswordValid) {
-      throw new AppError(401, "Invalid email or password");
+      throw new AppError(401, "Invalid username or password");
     }
 
     // Generate token
@@ -66,7 +66,7 @@ export class AuthService {
 
     return {
       user: {
-        id: parseInt(user.id),
+        id: Number(user.id),
         username: user.email.split("@")[0],
         email: user.email,
         firstName: user.firstName,

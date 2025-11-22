@@ -11,59 +11,55 @@ import {
   StatusBar,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useSelector, useDispatch } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
-  removeFavourite,
-  removeFavouriteTV,
-  selectAllFavourites,
-} from "../store/features/favouritesSlice";
+  useGetFavoritesQuery,
+  useRemoveFavoriteMutation,
+} from "../api/backendApi";
 import { useTheme } from "../hooks/useTheme";
 import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
-import { isMovie, isTVShow } from "../types/Movie";
 
 const screenWidth = Dimensions.get("window").width;
 const cardWidth = (screenWidth - spacing.lg * 3) / 2;
 
 export default function FavouritesScreen() {
   const navigation = useNavigation<any>();
-  const dispatch = useDispatch();
   const { colors } = useTheme();
-  const allFavourites = useSelector(selectAllFavourites);
-  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const { data: favorites, isLoading } = useGetFavoritesQuery();
+  const [removeFavorite] = useRemoveFavoriteMutation();
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
 
   // Ensure we have a valid array
-  const favouritesList = Array.isArray(allFavourites) ? allFavourites : [];
+  const favouritesList = Array.isArray(favorites) ? favorites : [];
 
   // Animation ref for the list
   const scrollY = new Animated.Value(0);
 
   const handleItemPress = (item: any) => {
     navigation.navigate("HomeTab", {
-      screen: item.mediaType === "movie" ? "Details" : "TVDetails",
-      params:
-        item.mediaType === "movie" ? { movieId: item.id } : { tvId: item.id },
+      screen: "Details",
+      params: { movieId: item.tmdbId },
     });
   };
 
-  const handleRemove = (id: number, mediaType: "movie" | "tv") => {
-    const key = `${mediaType}-${id}`;
-    setDeletingIds((prev) => new Set(prev).add(key));
+  const handleRemove = async (tmdbId: number) => {
+    setDeletingIds((prev) => new Set(prev).add(tmdbId));
 
     // Small delay for visual feedback before removal
-    setTimeout(() => {
-      if (mediaType === "movie") {
-        dispatch(removeFavourite(id));
-      } else {
-        dispatch(removeFavouriteTV(id));
+    setTimeout(async () => {
+      try {
+        await removeFavorite(tmdbId).unwrap();
+      } catch (error) {
+        console.error("Failed to remove favorite:", error);
+      } finally {
+        setDeletingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(tmdbId);
+          return next;
+        });
       }
-      setDeletingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(key);
-        return next;
-      });
     }, 300);
   };
 
@@ -74,22 +70,15 @@ export default function FavouritesScreen() {
     item: any;
     index: number;
   }) => {
-    const data = item.data;
-    const posterUri = data.poster_path
-      ? `${TMDB_IMAGE_BASE_URL}${data.poster_path}`
+    const posterUri = item.posterPath
+      ? `${TMDB_IMAGE_BASE_URL}${item.posterPath}`
       : undefined;
 
-    const key = `${item.mediaType}-${item.id}`;
-    const isDeleting = deletingIds.has(key);
+    const isDeleting = deletingIds.has(item.tmdbId);
 
-    const title = isMovie(data) ? data.title : isTVShow(data) ? data.name : "";
-    const date = isMovie(data)
-      ? data.release_date
-      : isTVShow(data)
-      ? data.first_air_date
-      : "";
-    const year = date ? date.slice(0, 4) : "N/A";
-    const rating = data.vote_average?.toFixed(1) || "0.0";
+    const title = item.title || "";
+    const year = "N/A"; // We don't have year info in favorites
+    const rating = "N/A"; // We don't have rating info in favorites
 
     return (
       <Animated.View
@@ -127,7 +116,7 @@ export default function FavouritesScreen() {
             {/* Top Right: Glassmorphism Remove Button */}
             <TouchableOpacity
               style={styles.removeButton}
-              onPress={() => handleRemove(item.id, item.mediaType)}
+              onPress={() => handleRemove(item.tmdbId)}
               activeOpacity={0.6}
             >
               <View style={styles.glassCircle}>
@@ -137,9 +126,7 @@ export default function FavouritesScreen() {
 
             {/* Top Left: Media Type Tag */}
             <View style={styles.mediaTag}>
-              <Text style={styles.mediaTagText}>
-                {item.mediaType === "movie" ? "MOVIE" : "TV"}
-              </Text>
+              <Text style={styles.mediaTagText}>MOVIE</Text>
             </View>
           </View>
 
@@ -215,7 +202,7 @@ export default function FavouritesScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
         data={favouritesList}
-        keyExtractor={(item) => `${item.mediaType}-${item.id}`}
+        keyExtractor={(item) => item.tmdbId.toString()}
         renderItem={renderFavouriteCard}
         numColumns={2}
         columnWrapperStyle={styles.columnWrapper}

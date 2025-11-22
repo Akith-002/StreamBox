@@ -7,86 +7,77 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   ScrollView,
+  Image,
 } from "react-native";
 // 1. Import SafeAreaView from the correct library
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import {
-  useDiscoverMoviesQuery,
-  useDiscoverTVQuery,
-  useGetMovieGenresQuery,
-  useGetTVGenresQuery,
-} from "../api/tmdbApi";
+  useGetPopularMoviesQuery,
+  useGetTopRatedMoviesQuery,
+} from "../api/backendApi";
+import { MovieDto } from "@streambox/shared";
 import { useTheme } from "../hooks/useTheme";
 import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
-import MediaCard from "../components/MediaCard";
-
-type ContentType = "movie" | "tv";
-type SortOption =
-  | "popularity.desc"
-  | "vote_average.desc"
-  | "primary_release_date.desc"
-  | "first_air_date.desc";
+import { TMDB_IMAGE_BASE_URL } from "../constants/config";
 
 export default function DiscoverScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
 
-  const [contentType, setContentType] = useState<ContentType>("movie");
-  const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
-  const [sortBy, setSortBy] = useState<SortOption>("popularity.desc");
-
-  const { data: movieGenres } = useGetMovieGenresQuery(undefined);
-  const { data: tvGenres } = useGetTVGenresQuery(undefined);
-
-  const discoverParams: any = {
-    sort_by: sortBy,
-    page: 1,
-  };
-
-  if (selectedGenre) {
-    discoverParams.with_genres = selectedGenre.toString();
-  }
+  const [sortBy, setSortBy] = useState<"popular" | "top_rated">("popular");
 
   const {
-    data: movieData,
-    isLoading: movieLoading,
-    error: movieError,
-  } = useDiscoverMoviesQuery(discoverParams, {
-    skip: contentType !== "movie",
+    data: popularMovies,
+    isLoading: popularLoading,
+    error: popularError,
+  } = useGetPopularMoviesQuery(1, {
+    skip: sortBy !== "popular",
   });
 
   const {
-    data: tvData,
-    isLoading: tvLoading,
-    error: tvError,
-  } = useDiscoverTVQuery(
-    contentType === "tv" && sortBy === "primary_release_date.desc"
-      ? { ...discoverParams, sort_by: "first_air_date.desc" }
-      : discoverParams,
-    {
-      skip: contentType !== "tv",
-    }
-  );
+    data: topRatedData,
+    isLoading: topRatedLoading,
+    error: topRatedError,
+  } = useGetTopRatedMoviesQuery(1, {
+    skip: sortBy !== "top_rated",
+  });
 
   const results =
-    contentType === "movie" ? movieData?.results : tvData?.results;
-  const isLoading = contentType === "movie" ? movieLoading : tvLoading;
-  const error = contentType === "movie" ? movieError : tvError;
+    sortBy === "popular" ? popularMovies?.results : topRatedData?.results;
+  const isLoading = sortBy === "popular" ? popularLoading : topRatedLoading;
+  const error = sortBy === "popular" ? popularError : topRatedError;
 
-  const genres =
-    contentType === "movie" ? movieGenres?.genres : tvGenres?.genres;
-
-  const handleMediaPress = (id: number, mediaType: "movie" | "tv") => {
+  const handleMediaPress = (id: number) => {
     navigation.navigate("HomeTab", {
-      screen: mediaType === "movie" ? "Details" : "TVDetails",
-      params: mediaType === "movie" ? { movieId: id } : { tvId: id },
+      screen: "Details",
+      params: { movieId: id },
     });
   };
 
-  const renderMediaCard = ({ item }: { item: any }) => (
-    <MediaCard item={item} onPress={handleMediaPress} />
+  const renderMediaCard = ({ item }: { item: MovieDto }) => (
+    <TouchableOpacity
+      style={styles.movieCard}
+      onPress={() => handleMediaPress(item.id)}
+    >
+      <Image
+        source={{ uri: `${TMDB_IMAGE_BASE_URL}${item.poster_path}` }}
+        style={styles.moviePoster}
+      />
+      <Text
+        style={[styles.movieTitle, { color: colors.text }]}
+        numberOfLines={2}
+      >
+        {item.title}
+      </Text>
+      <View style={styles.movieMeta}>
+        <Feather name="star" size={12} color="#FFD700" />
+        <Text style={[styles.movieRating, { color: colors.text }]}>
+          {item.vote_average.toFixed(1)}
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 
   const FilterChip = ({
@@ -132,63 +123,10 @@ export default function DiscoverScreen() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      {/* TOP TOGGLE */}
       <View style={styles.headerSection}>
-        <View
-          style={[styles.segmentContainer, { backgroundColor: colors.card }]}
-        >
-          <TouchableOpacity
-            style={[
-              styles.segmentButton,
-              contentType === "movie" && styles.segmentActive,
-            ]}
-            onPress={() => {
-              setContentType("movie");
-              setSelectedGenre(null);
-            }}
-          >
-            <Text
-              style={[
-                styles.segmentText,
-                {
-                  color:
-                    contentType === "movie"
-                      ? colors.primary
-                      : colors.textLight || "#888",
-                  fontWeight: contentType === "movie" ? "700" : "500",
-                },
-              ]}
-            >
-              Movies
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.segmentButton,
-              contentType === "tv" && styles.segmentActive,
-            ]}
-            onPress={() => {
-              setContentType("tv");
-              setSelectedGenre(null);
-            }}
-          >
-            <Text
-              style={[
-                styles.segmentText,
-                {
-                  color:
-                    contentType === "tv"
-                      ? colors.primary
-                      : colors.textLight || "#888",
-                  fontWeight: contentType === "tv" ? "700" : "500",
-                },
-              ]}
-            >
-              TV Shows
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          Discover Movies
+        </Text>
       </View>
 
       {/* FILTERS AREA */}
@@ -202,54 +140,15 @@ export default function DiscoverScreen() {
           <FilterChip
             label="Popular"
             icon="trending-up"
-            isActive={sortBy === "popularity.desc"}
-            onPress={() => setSortBy("popularity.desc")}
+            isActive={sortBy === "popular"}
+            onPress={() => setSortBy("popular")}
           />
           <FilterChip
             label="Top Rated"
             icon="star"
-            isActive={sortBy === "vote_average.desc"}
-            onPress={() => setSortBy("vote_average.desc")}
+            isActive={sortBy === "top_rated"}
+            onPress={() => setSortBy("top_rated")}
           />
-          <FilterChip
-            label="Latest"
-            icon="calendar"
-            isActive={
-              sortBy === "primary_release_date.desc" ||
-              sortBy === "first_air_date.desc"
-            }
-            onPress={() =>
-              setSortBy(
-                contentType === "movie"
-                  ? "primary_release_date.desc"
-                  : "first_air_date.desc"
-              )
-            }
-          />
-        </ScrollView>
-
-        {/* Genres */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[
-            styles.scrollContent,
-            { marginTop: spacing.sm },
-          ]}
-        >
-          <FilterChip
-            label="All"
-            isActive={selectedGenre === null}
-            onPress={() => setSelectedGenre(null)}
-          />
-          {genres?.map((genre: any) => (
-            <FilterChip
-              key={genre.id}
-              label={genre.name}
-              isActive={selectedGenre === genre.id}
-              onPress={() => setSelectedGenre(genre.id)}
-            />
-          ))}
         </ScrollView>
       </View>
 
@@ -272,7 +171,7 @@ export default function DiscoverScreen() {
       ) : (
         <FlatList
           data={results}
-          keyExtractor={(item) => `${contentType}-${item.id}`}
+          keyExtractor={(item) => `movie-${item.id}`}
           renderItem={renderMediaCard}
           numColumns={2}
           columnWrapperStyle={styles.row}
@@ -352,5 +251,33 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: fontSizes.md,
+  },
+  headerTitle: {
+    fontSize: fontSizes.xxl,
+    fontWeight: "bold",
+  },
+  movieCard: {
+    width: "48%",
+    marginBottom: spacing.md,
+  },
+  moviePoster: {
+    width: "100%",
+    aspectRatio: 2 / 3,
+    borderRadius: borderRadius.md,
+  },
+  movieTitle: {
+    marginTop: spacing.xs,
+    fontSize: fontSizes.sm,
+    fontWeight: "600",
+  },
+  movieMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+    gap: 4,
+  },
+  movieRating: {
+    fontSize: fontSizes.xs,
+    fontWeight: "600",
   },
 });

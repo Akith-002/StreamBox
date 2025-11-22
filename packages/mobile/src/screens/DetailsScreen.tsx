@@ -14,35 +14,33 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { useDispatch, useSelector } from "react-redux";
-import { useGetMovieDetailsQuery } from "../api/tmdbApi";
 import {
-  addFavourite,
-  removeFavourite,
-  selectFavouriteMovies,
-} from "../store/features/favouritesSlice";
+  useGetMovieDetailsQuery,
+  useGetFavoritesQuery,
+  useAddFavoriteMutation,
+  useRemoveFavoriteMutation,
+} from "../api/backendApi";
 import { useTheme } from "../hooks/useTheme";
 import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
-import { RootState } from "../store/store";
 
 const screenWidth = Dimensions.get("window").width;
 
 export default function DetailsScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const dispatch = useDispatch();
   const { colors } = useTheme();
   const { movieId } = route.params;
   const { data: movie, isLoading, error } = useGetMovieDetailsQuery(movieId);
+  const { data: favorites } = useGetFavoritesQuery();
+  const [addFavorite] = useAddFavoriteMutation();
+  const [removeFavorite] = useRemoveFavoriteMutation();
 
   const [isFavouriteAnimating, setIsFavouriteAnimating] = useState(false);
   const heartScale = useRef(new Animated.Value(1)).current;
 
-  const favouriteMovies = useSelector(selectFavouriteMovies);
-  const isFavourite = movie
-    ? favouriteMovies.some((m) => m.id === movie.id)
-    : false;
+  const isFavourite =
+    movie && favorites ? favorites.some((f) => f.tmdbId === movie.id) : false;
 
   const handleGoBack = () => {
     navigation.goBack();
@@ -66,12 +64,20 @@ export default function DetailsScreen() {
       }),
     ]).start(() => setIsFavouriteAnimating(false));
 
-    if (isFavourite) {
-      dispatch(removeFavourite(movie.id));
-      Alert.alert("Removed", `${movie.title} removed from favorites`);
-    } else {
-      dispatch(addFavourite(movie));
-      Alert.alert("Added", `${movie.title} added to favorites`);
+    try {
+      if (isFavourite) {
+        await removeFavorite(movie.id).unwrap();
+        Alert.alert("Removed", `${movie.title} removed from favorites`);
+      } else {
+        await addFavorite({
+          tmdbId: movie.id,
+          title: movie.title,
+          posterPath: movie.poster_path,
+        }).unwrap();
+        Alert.alert("Added", `${movie.title} added to favorites`);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to update favorites. Please try again.");
     }
   };
 

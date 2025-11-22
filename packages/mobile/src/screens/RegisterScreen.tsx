@@ -23,10 +23,11 @@ import {
   borderRadius,
   SCREEN_HEIGHT,
 } from "../constants/theme";
+import { useRegisterMutation } from "../api/backendApi";
 
 export default function RegisterScreen({ navigation }: { navigation: any }) {
   const { colors } = useTheme();
-  const [loading, setLoading] = useState(false);
+  const [register, { isLoading }] = useRegisterMutation();
 
   const {
     control,
@@ -45,10 +46,9 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
   });
 
   const onSubmit = async (data: RegisterData) => {
-    setLoading(true);
+    try {
+      await register(data).unwrap();
 
-    setTimeout(() => {
-      setLoading(false);
       Alert.alert(
         "Registration Successful",
         "Your account has been created. Please sign in.",
@@ -59,7 +59,25 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
           },
         ]
       );
-    }, 1500);
+    } catch (error: any) {
+      console.log("Registration error:", JSON.stringify(error, null, 2));
+
+      let errorMessage = "Registration failed. Please try again.";
+
+      if (error.status === 400) {
+        errorMessage =
+          error.data?.message || "User with this email already exists.";
+      } else if (error.status === 500) {
+        errorMessage = "Server error. Please try again later.";
+      } else if (!error.status) {
+        errorMessage =
+          "Network error. Please check your connection and make sure the server is running.";
+      } else if (error.data?.message) {
+        errorMessage = error.data.message;
+      }
+
+      Alert.alert("Registration Error", errorMessage);
+    }
   };
 
   return (
@@ -232,10 +250,10 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
 
             {/* Create Account Button */}
             <Button
-              title={loading ? "Creating Account..." : "Create Account"}
+              title={isLoading ? "Creating Account..." : "Create Account"}
               onPress={handleSubmit(onSubmit)}
-              loading={loading}
-              disabled={loading}
+              loading={isLoading}
+              disabled={isLoading}
             />
           </View>
         </View>
@@ -260,7 +278,7 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
           </Text>
           <TouchableOpacity
             onPress={() => navigation.navigate("Login")}
-            disabled={loading}
+            disabled={isLoading}
           >
             <Text style={[styles.signInLink, { color: colors.primary }]}>
               Sign In

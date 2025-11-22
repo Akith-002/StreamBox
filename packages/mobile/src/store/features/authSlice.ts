@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { AuthState, User } from "../../types/Auth";
+import { clearAll } from "../../utils/secureStorage";
 
 const initialState: AuthState = {
   user: null,
@@ -16,13 +17,15 @@ const authSlice = createSlice({
       action: PayloadAction<{ user: User; token: string }>
     ) => {
       state.user = action.payload.user;
-      state.token = action.payload.token;
       state.isAuthenticated = true;
+      // Token is saved to secure storage in the LoginScreen, not in Redux
     },
     logOut: (state) => {
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
+      // Clear secure storage
+      clearAll();
     },
   },
 });
