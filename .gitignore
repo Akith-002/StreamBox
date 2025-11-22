@@ -160,6 +160,9 @@ packages/shared/*.tsbuildinfo
 # MISCELLANEOUS
 # ============================================================================
 implementation_plan.md
+demo_video_script.md
+project_status.md
+submission_checklist.md
 *.log
 .cache/
 tmp/
