@@ -84,7 +84,10 @@ export default function HomeScreen() {
   }, [heroIndex, heroMovies.length]);
 
   const handleMoviePress = (movieId: number) => {
-    navigation.navigate("Details", { movieId } as any);
+    navigation.navigate("HomeTab", {
+      screen: "Details",
+      params: { movieId },
+    });
   };
 
   if (isLoading) {

@@ -33,7 +33,13 @@ export default function FavouritesScreen() {
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
 
   const handleMoviePress = (movieId: number) => {
-    navigation.navigate("Details" as never, { movieId } as never);
+    navigation.navigate(
+      "HomeTab" as never,
+      {
+        screen: "Details",
+        params: { movieId },
+      } as never
+    );
   };
 
   const handleRemove = (movieId: number) => {
@@ -165,7 +171,7 @@ export default function FavouritesScreen() {
 
         {/* Gradient Button */}
         <TouchableOpacity
-          onPress={() => navigation.navigate("Home" as never)}
+          onPress={() => navigation.navigate("HomeTab" as never)}
           activeOpacity={0.8}
         >
           <LinearGradient
