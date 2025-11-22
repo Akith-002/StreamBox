@@ -2,19 +2,15 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useDispatch, useSelector } from "react-redux";
 import { Movie, TVShow, isMovie, isTVShow } from "../types/Movie";
 import { useTheme } from "../hooks/useTheme";
 import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
 import {
-  addFavourite,
-  removeFavourite,
-  addFavouriteTV,
-  removeFavouriteTV,
-  selectFavouriteMovies,
-  selectFavouriteTV,
-} from "../store/features/favouritesSlice";
+  useGetFavoritesQuery,
+  useAddFavoriteMutation,
+  useRemoveFavoriteMutation,
+} from "../api/backendApi";
 
 interface MediaCardProps {
   item: Movie | TVShow;
@@ -23,38 +19,41 @@ interface MediaCardProps {
 
 export default function MediaCard({ item, onPress }: MediaCardProps) {
   const { colors } = useTheme();
-  const dispatch = useDispatch();
 
-  const favouriteMovies = useSelector(selectFavouriteMovies);
-  const favouriteTV = useSelector(selectFavouriteTV);
+  const { data: favorites } = useGetFavoritesQuery();
+  const [addFavorite] = useAddFavoriteMutation();
+  const [removeFavorite] = useRemoveFavoriteMutation();
 
   const mediaType = isMovie(item) ? "movie" : "tv";
-  const isFavourite =
-    mediaType === "movie"
-      ? favouriteMovies.some((m) => m.id === item.id)
-      : favouriteTV.some((t) => t.id === item.id);
+  const isFavourite = favorites
+    ? favorites.some((f) => f.tmdbId === item.id && f.mediaType === mediaType)
+    : false;
 
-  const handleFavouritePress = () => {
+  const handleFavouritePress = async () => {
     console.log(
       "Favourite pressed:",
       item.id,
       mediaType,
       isFavourite ? "removing" : "adding"
     );
-    if (mediaType === "movie") {
+
+    try {
       if (isFavourite) {
-        dispatch(removeFavourite(item.id));
+        await removeFavorite({ tmdbId: item.id, mediaType }).unwrap();
+        console.log(`Removed ${mediaType} from favorites:`, item.id);
       } else {
-        console.log("Adding movie to favourites:", item);
-        dispatch(addFavourite(item as Movie));
+        const title = isMovie(item) ? item.title : item.name;
+        console.log(`Adding ${mediaType} to favourites:`, item);
+        await addFavorite({
+          tmdbId: item.id,
+          title,
+          posterPath: item.poster_path,
+          mediaType,
+        }).unwrap();
+        console.log(`Added ${mediaType} to favorites:`, item.id);
       }
-    } else {
-      if (isFavourite) {
-        dispatch(removeFavouriteTV(item.id));
-      } else {
-        console.log("Adding TV show to favourites:", item);
-        dispatch(addFavouriteTV(item as TVShow));
-      }
+    } catch (error) {
+      console.error("Error updating favorite:", error);
     }
   };
 

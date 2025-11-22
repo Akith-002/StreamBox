@@ -42,7 +42,8 @@ export const removeFavorite = async (
   try {
     const userId = req.userId!;
     const tmdbId = parseInt(req.params.tmdbId);
-    await favoritesService.removeFavorite(userId, tmdbId);
+    const mediaType = (req.query.mediaType as "movie" | "tv") || "movie";
+    await favoritesService.removeFavorite(userId, tmdbId, mediaType);
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -57,7 +58,12 @@ export const checkIsFavorite = async (
   try {
     const userId = req.userId!;
     const tmdbId = parseInt(req.params.tmdbId);
-    const isFavorite = await favoritesService.isFavorite(userId, tmdbId);
+    const mediaType = (req.query.mediaType as "movie" | "tv") || "movie";
+    const isFavorite = await favoritesService.isFavorite(
+      userId,
+      tmdbId,
+      mediaType
+    );
     res.json({ isFavorite });
   } catch (error) {
     next(error);

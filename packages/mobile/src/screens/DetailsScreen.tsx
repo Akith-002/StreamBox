@@ -40,7 +40,12 @@ export default function DetailsScreen() {
   const heartScale = useRef(new Animated.Value(1)).current;
 
   const isFavourite =
-    movie && favorites ? favorites.some((f) => f.tmdbId === movie.id) : false;
+    movie && favorites
+      ? favorites.some(
+          (f) =>
+            f.tmdbId === movie.id && (f.mediaType === "movie" || !f.mediaType)
+        )
+      : false;
 
   const handleGoBack = () => {
     navigation.goBack();
@@ -66,13 +71,16 @@ export default function DetailsScreen() {
 
     try {
       if (isFavourite) {
-        await removeFavorite(movie.id).unwrap();
+        await removeFavorite({ tmdbId: movie.id, mediaType: "movie" }).unwrap();
         Alert.alert("Removed", `${movie.title} removed from favorites`);
       } else {
         await addFavorite({
           tmdbId: movie.id,
           title: movie.title,
           posterPath: movie.poster_path,
+          mediaType: "movie",
+          voteAverage: movie.vote_average,
+          releaseDate: movie.release_date,
         }).unwrap();
         Alert.alert("Added", `${movie.title} added to favorites`);
       }

@@ -15,10 +15,15 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
-import { useGetTrendingMoviesQuery } from "../api/backendApi";
 import { useTheme } from "../hooks/useTheme";
+import {
+  useGetTrendingMoviesQuery,
+  useGetTrendingTVQuery,
+  useGetTopRatedMoviesQuery,
+  useGetPopularTVQuery,
+} from "../api/tmdbApi";
 import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
-import { MovieDto } from "@streambox/shared";
+import { Movie, TVShow, MediaItem, isMovie, isTVShow } from "../types/Movie";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
 import MediaCard from "../components/MediaCard";
 
@@ -28,18 +33,54 @@ const screenWidth = Dimensions.get("window").width;
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
+
   const {
-    data: moviesData,
-    error,
-    isLoading,
-    refetch,
-  } = useGetTrendingMoviesQuery(1);
+    data: trendingMoviesData,
+    isLoading: loadingMovies,
+    error: moviesError,
+  } = useGetTrendingMoviesQuery("week");
+
+  const {
+    data: trendingTVData,
+    isLoading: loadingTV,
+    error: tvError,
+  } = useGetTrendingTVQuery("week");
+
+  const {
+    data: topRatedMoviesData,
+    isLoading: loadingTopRated,
+    error: topRatedError,
+  } = useGetTopRatedMoviesQuery(1);
+
+  const {
+    data: popularTVData,
+    isLoading: loadingPopularTV,
+    error: popularTVError,
+  } = useGetPopularTVQuery(1);
+
+  const isLoading =
+    loadingMovies || loadingTV || loadingTopRated || loadingPopularTV;
+
+  // Log errors for debugging
+  useEffect(() => {
+    if (moviesError) console.log("Movies Error:", moviesError);
+    if (tvError) console.log("TV Error:", tvError);
+    if (topRatedError) console.log("Top Rated Error:", topRatedError);
+    if (popularTVError) console.log("Popular TV Error:", popularTVError);
+  }, [moviesError, tvError, topRatedError, popularTVError]);
+
+  // Log data for debugging
+  useEffect(() => {
+    console.log("Trending Movies:", trendingMoviesData?.results?.length || 0);
+    console.log("Trending TV:", trendingTVData?.results?.length || 0);
+    console.log("Top Rated Movies:", topRatedMoviesData?.results?.length || 0);
+    console.log("Popular TV:", popularTVData?.results?.length || 0);
+  }, [trendingMoviesData, trendingTVData, topRatedMoviesData, popularTVData]);
 
   const [heroIndex, setHeroIndex] = useState(0);
   const [nextHeroIndex, setNextHeroIndex] = useState(0);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  // Keep a numeric copy of the animated opacity so we don't read private internals
   const [overlayOpacity, setOverlayOpacity] = useState<number>(0);
 
   useEffect(() => {
@@ -53,12 +94,22 @@ export default function HomeScreen() {
     };
   }, [fadeAnim]);
 
-  const trendingMovies = moviesData?.results ?? [];
+  const trendingMovies = (trendingMoviesData?.results ?? []) as Movie[];
+  const trendingTV = (trendingTVData?.results ?? []) as TVShow[];
+  const topRatedMovies = (topRatedMoviesData?.results ?? []) as Movie[];
+  const popularTV = (popularTVData?.results ?? []) as TVShow[];
 
-  const heroItems = trendingMovies.slice(0, 5);
+  // Combine movies and TV shows for hero section
+  const allHeroItems: MediaItem[] = [
+    ...trendingMovies.slice(0, 3),
+    ...trendingTV.slice(0, 2),
+  ];
+  // Filter out Person types to ensure only Movie and TVShow are in hero items
+  const heroItems = allHeroItems
+    .filter((item): item is Movie | TVShow => isMovie(item) || isTVShow(item))
+    .slice(0, 5);
   const currentItem = heroItems[heroIndex];
   const nextItem = heroItems[nextHeroIndex];
-  const topMovies = trendingMovies.slice(5, 15);
 
   const changeHeroItem = (newIndex: number) => {
     if (newIndex === heroIndex) return;
@@ -88,42 +139,67 @@ export default function HomeScreen() {
     return () => clearInterval(interval);
   }, [heroIndex, heroItems.length]);
 
-  const handleMediaPress = (id: number) => {
-    navigation.navigate("HomeTab", {
-      screen: "Details",
-      params: { movieId: id },
-    });
+  const handleMediaPress = (item: MediaItem) => {
+    if (isMovie(item)) {
+      navigation.navigate("HomeTab", {
+        screen: "Details",
+        params: { movieId: item.id },
+      });
+    } else if (isTVShow(item)) {
+      navigation.navigate("HomeTab", {
+        screen: "TVDetails",
+        params: { tvId: item.id },
+      });
+    }
   };
 
-  if (isLoading) {
+  // Only show full-screen loading if we have no data at all
+  const hasNoData =
+    !trendingMoviesData &&
+    !trendingTVData &&
+    !topRatedMoviesData &&
+    !popularTVData;
+  const hasErrors = moviesError || tvError || topRatedError || popularTVError;
+
+  if (isLoading && hasNoData) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <Feather name="alert-triangle" size={48} color={colors.error} />
-        <TouchableOpacity
-          onPress={() => refetch()}
-          style={[styles.retryButton, { backgroundColor: colors.primary }]}
-        >
-          <Text style={{ color: colors.card, fontWeight: "600" }}>
-            Try Again
+        <Text style={[{ color: colors.textSecondary, marginTop: 16 }]}>
+          Loading content...
+        </Text>
+        {hasErrors && (
+          <Text
+            style={[
+              {
+                color: colors.error,
+                marginTop: 16,
+                paddingHorizontal: 20,
+                textAlign: "center",
+              },
+            ]}
+          >
+            Error loading content. Check your internet connection and TMDB API
+            key.
           </Text>
-        </TouchableOpacity>
+        )}
       </View>
     );
   }
 
-  const renderHeroContent = (item: MovieDto) => {
-    const title = item.title;
-    const year = item.release_date ? item.release_date.slice(0, 4) : "";
-    const voteAverage = item.vote_average;
-    const mediaType = "movie";
+  const renderHeroContent = (item: MediaItem) => {
+    const title = isMovie(item) ? item.title : isTVShow(item) ? item.name : "";
+    const year = isMovie(item)
+      ? item.release_date
+        ? item.release_date.slice(0, 4)
+        : ""
+      : isTVShow(item)
+      ? item.first_air_date
+        ? item.first_air_date.slice(0, 4)
+        : ""
+      : "";
+    const voteAverage =
+      isMovie(item) || isTVShow(item) ? item.vote_average || 0 : 0;
 
     return (
       <>
@@ -153,7 +229,7 @@ export default function HomeScreen() {
             <Text style={styles.heroYear}>{year}</Text>
           </View>
           <TouchableOpacity
-            onPress={() => handleMediaPress(item.id)}
+            onPress={() => handleMediaPress(item)}
             activeOpacity={0.85}
           >
             <LinearGradient
@@ -171,28 +247,58 @@ export default function HomeScreen() {
     );
   };
 
-  const renderMediaCard = ({ item }: { item: MovieDto }) => (
-    <TouchableOpacity onPress={() => handleMediaPress(item.id)}>
-      <View style={styles.movieCard}>
-        <Image
-          source={{ uri: `${TMDB_IMAGE_BASE_URL}${item.poster_path}` }}
-          style={styles.moviePoster}
-        />
-        <Text
-          style={[styles.movieTitle, { color: colors.text }]}
-          numberOfLines={2}
-        >
-          {item.title}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+  const renderMediaCard = ({ item }: { item: MediaItem }) => {
+    const title = isMovie(item) ? item.title : isTVShow(item) ? item.name : "";
+    const posterPath =
+      isMovie(item) || isTVShow(item) ? item.poster_path : null;
+
+    return (
+      <TouchableOpacity onPress={() => handleMediaPress(item)}>
+        <View style={styles.movieCard}>
+          {posterPath && (
+            <Image
+              source={{ uri: `${TMDB_IMAGE_BASE_URL}${posterPath}` }}
+              style={styles.moviePoster}
+            />
+          )}
+          <Text
+            style={[styles.movieTitle, { color: colors.text }]}
+            numberOfLines={2}
+          >
+            {title}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
       showsVerticalScrollIndicator={false}
     >
+      {/* Debug Info - Remove after testing */}
+      {__DEV__ && (
+        <View
+          style={{
+            padding: 10,
+            backgroundColor: colors.card,
+            margin: 10,
+            borderRadius: 8,
+          }}
+        >
+          <Text style={{ color: colors.text, fontSize: 10 }}>
+            Movies: {trendingMovies.length} | TV: {trendingTV.length} | Top:{" "}
+            {topRatedMovies.length} | Pop: {popularTV.length}
+          </Text>
+          {hasErrors && (
+            <Text style={{ color: colors.error, fontSize: 10 }}>
+              Has Errors!
+            </Text>
+          )}
+        </View>
+      )}
+
       {/* Featured Hero */}
       {currentItem && (
         <View style={styles.heroSection}>
@@ -200,9 +306,14 @@ export default function HomeScreen() {
           <View style={StyleSheet.absoluteFill}>
             <ImageBackground
               source={{
-                uri: currentItem.backdrop_path
-                  ? `https://image.tmdb.org/t/p/w1280${currentItem.backdrop_path}`
-                  : `${TMDB_IMAGE_BASE_URL}${currentItem.poster_path}`,
+                uri:
+                  (isMovie(currentItem) || isTVShow(currentItem)) &&
+                  currentItem.backdrop_path
+                    ? `https://image.tmdb.org/t/p/w1280${currentItem.backdrop_path}`
+                    : (isMovie(currentItem) || isTVShow(currentItem)) &&
+                      currentItem.poster_path
+                    ? `${TMDB_IMAGE_BASE_URL}${currentItem.poster_path}`
+                    : "",
               }}
               style={styles.heroImage}
               imageStyle={styles.heroImageStyle}
@@ -218,9 +329,14 @@ export default function HomeScreen() {
             {nextItem && (
               <ImageBackground
                 source={{
-                  uri: nextItem.backdrop_path
-                    ? `https://image.tmdb.org/t/p/w1280${nextItem.backdrop_path}`
-                    : `${TMDB_IMAGE_BASE_URL}${nextItem.poster_path}`,
+                  uri:
+                    (isMovie(nextItem) || isTVShow(nextItem)) &&
+                    nextItem.backdrop_path
+                      ? `https://image.tmdb.org/t/p/w1280${nextItem.backdrop_path}`
+                      : (isMovie(nextItem) || isTVShow(nextItem)) &&
+                        nextItem.poster_path
+                      ? `${TMDB_IMAGE_BASE_URL}${nextItem.poster_path}`
+                      : "",
                 }}
                 style={styles.heroImage}
                 imageStyle={styles.heroImageStyle}
@@ -232,7 +348,7 @@ export default function HomeScreen() {
 
           {/* Carousel Indicators */}
           <View style={[styles.carouselIndicators, { zIndex: 2 }]}>
-            {heroItems.map((_: MovieDto, index: number) => (
+            {heroItems.map((_: MediaItem, index: number) => (
               <TouchableOpacity
                 key={index}
                 onPress={() => changeHeroItem(index)}
@@ -275,11 +391,51 @@ export default function HomeScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+        {trendingMovies.length > 0 ? (
+          <FlatList
+            data={trendingMovies.slice(0, 10)}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => `trending-movie-${item.id}`}
+            renderItem={renderMediaCard}
+            contentContainerStyle={styles.horizontalList}
+          />
+        ) : (
+          <View
+            style={{
+              paddingHorizontal: spacing.lg,
+              paddingVertical: spacing.xl,
+            }}
+          >
+            <Text style={[{ color: colors.textSecondary }]}>
+              {loadingMovies ? "Loading..." : "No trending movies available"}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {/* Trending TV Shows Section */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Trending TV Shows
+            </Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textLight }]}>
+              Popular series this week
+            </Text>
+          </View>
+          <TouchableOpacity>
+            <Text style={[styles.seeMore, { color: colors.primary }]}>
+              See all
+            </Text>
+          </TouchableOpacity>
+        </View>
         <FlatList
-          data={trendingMovies.slice(0, 10)}
+          data={trendingTV.slice(0, 10)}
           horizontal
           showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => `trending-movie-${item.id}`}
+          keyExtractor={(item) => `trending-tv-${item.id}`}
           renderItem={renderMediaCard}
           contentContainerStyle={styles.horizontalList}
         />
@@ -303,10 +459,37 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
         <FlatList
-          data={topMovies}
+          data={topRatedMovies.slice(0, 10)}
           horizontal
           showsHorizontalScrollIndicator={false}
           keyExtractor={(item) => `top-movie-${item.id}`}
+          renderItem={renderMediaCard}
+          contentContainerStyle={styles.horizontalList}
+        />
+      </View>
+
+      {/* Popular TV Shows Section */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Popular TV Shows
+            </Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textLight }]}>
+              What people are watching
+            </Text>
+          </View>
+          <TouchableOpacity>
+            <Text style={[styles.seeMore, { color: colors.primary }]}>
+              See all
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <FlatList
+          data={popularTV.slice(0, 10)}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(item) => `popular-tv-${item.id}`}
           renderItem={renderMediaCard}
           contentContainerStyle={styles.horizontalList}
         />

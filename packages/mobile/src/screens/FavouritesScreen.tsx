@@ -38,19 +38,30 @@ export default function FavouritesScreen() {
   const scrollY = new Animated.Value(0);
 
   const handleItemPress = (item: any) => {
-    navigation.navigate("HomeTab", {
-      screen: "Details",
-      params: { movieId: item.tmdbId },
-    });
+    const mediaType = item.mediaType || "movie";
+    if (mediaType === "tv") {
+      navigation.navigate("HomeTab", {
+        screen: "TVDetails",
+        params: { tvId: item.tmdbId },
+      });
+    } else {
+      navigation.navigate("HomeTab", {
+        screen: "Details",
+        params: { movieId: item.tmdbId },
+      });
+    }
   };
 
-  const handleRemove = async (tmdbId: number) => {
+  const handleRemove = async (item: any) => {
+    const tmdbId = item.tmdbId;
+    const mediaType = item.mediaType || "movie";
+
     setDeletingIds((prev) => new Set(prev).add(tmdbId));
 
     // Small delay for visual feedback before removal
     setTimeout(async () => {
       try {
-        await removeFavorite(tmdbId).unwrap();
+        await removeFavorite({ tmdbId, mediaType }).unwrap();
       } catch (error) {
         console.error("Failed to remove favorite:", error);
       } finally {
@@ -77,8 +88,8 @@ export default function FavouritesScreen() {
     const isDeleting = deletingIds.has(item.tmdbId);
 
     const title = item.title || "";
-    const year = "N/A"; // We don't have year info in favorites
-    const rating = "N/A"; // We don't have rating info in favorites
+    const year = item.releaseDate ? item.releaseDate.slice(0, 4) : "N/A";
+    const rating = item.voteAverage ? item.voteAverage.toFixed(1) : "N/A";
 
     return (
       <Animated.View
@@ -116,7 +127,7 @@ export default function FavouritesScreen() {
             {/* Top Right: Glassmorphism Remove Button */}
             <TouchableOpacity
               style={styles.removeButton}
-              onPress={() => handleRemove(item.tmdbId)}
+              onPress={() => handleRemove(item)}
               activeOpacity={0.6}
             >
               <View style={styles.glassCircle}>
@@ -126,7 +137,11 @@ export default function FavouritesScreen() {
 
             {/* Top Left: Media Type Tag */}
             <View style={styles.mediaTag}>
-              <Text style={styles.mediaTagText}>MOVIE</Text>
+              <Text style={styles.mediaTagText}>
+                {(item.mediaType || "movie").toUpperCase() === "TV"
+                  ? "TV SHOW"
+                  : "MOVIE"}
+              </Text>
             </View>
           </View>
 

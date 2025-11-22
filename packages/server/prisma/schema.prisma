@@ -21,14 +21,17 @@ model User {
 }
 
 model Favorite {
-  id         String   @id @default(uuid())
-  tmdbId     Int
-  title      String
-  posterPath String?
-  userId     String
-  createdAt  DateTime @default(now())
+  id          String   @id @default(uuid())
+  tmdbId      Int
+  title       String
+  posterPath  String?
+  mediaType   String   @default("movie") // "movie" or "tv"
+  voteAverage Float?
+  releaseDate String?
+  userId      String
+  createdAt   DateTime @default(now())
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, tmdbId])
+  @@unique([userId, tmdbId, mediaType])
 }

@@ -11,6 +11,7 @@ import {
 } from "redux-persist";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { backendApi } from "../api/backendApi";
+import { tmdbApi } from "../api/tmdbApi";
 import authReducer from "./features/authSlice";
 import favouritesReducer from "./features/favouritesSlice";
 import uiReducer from "./features/uiSlice";
@@ -26,6 +27,7 @@ const rootReducer = combineReducers({
   favourites: favouritesReducer,
   ui: uiReducer,
   [backendApi.reducerPath]: backendApi.reducer,
+  [tmdbApi.reducerPath]: tmdbApi.reducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -37,7 +39,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }).concat(backendApi.middleware),
+    }).concat(backendApi.middleware, tmdbApi.middleware),
 });
 
 export const persistor = persistStore(store);

@@ -15,13 +15,12 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { useDispatch, useSelector } from "react-redux";
 import { useGetTVDetailsQuery } from "../api/tmdbApi";
 import {
-  addFavouriteTV,
-  removeFavouriteTV,
-  selectFavouriteTV,
-} from "../store/features/favouritesSlice";
+  useGetFavoritesQuery,
+  useAddFavoriteMutation,
+  useRemoveFavoriteMutation,
+} from "../api/backendApi";
 import { useTheme } from "../hooks/useTheme";
 import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
@@ -31,16 +30,20 @@ const screenWidth = Dimensions.get("window").width;
 export default function TVDetailsScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const dispatch = useDispatch();
   const { colors } = useTheme();
   const { tvId } = route.params;
   const { data: show, isLoading, error } = useGetTVDetailsQuery(tvId);
+  const { data: favorites } = useGetFavoritesQuery();
+  const [addFavorite] = useAddFavoriteMutation();
+  const [removeFavorite] = useRemoveFavoriteMutation();
 
   const [isFavouriteAnimating, setIsFavouriteAnimating] = useState(false);
   const heartScale = useRef(new Animated.Value(1)).current;
 
-  const favouriteTV = useSelector(selectFavouriteTV);
-  const isFavourite = show ? favouriteTV.some((s) => s.id === show.id) : false;
+  const isFavourite =
+    show && favorites
+      ? favorites.some((f) => f.tmdbId === show.id && f.mediaType === "tv")
+      : false;
 
   const handleGoBack = () => {
     navigation.goBack();
@@ -64,12 +67,23 @@ export default function TVDetailsScreen() {
       }),
     ]).start(() => setIsFavouriteAnimating(false));
 
-    if (isFavourite) {
-      dispatch(removeFavouriteTV(show.id));
-      Alert.alert("Removed", `${show.name} removed from favorites`);
-    } else {
-      dispatch(addFavouriteTV(show));
-      Alert.alert("Added", `${show.name} added to favorites`);
+    try {
+      if (isFavourite) {
+        await removeFavorite({ tmdbId: show.id, mediaType: "tv" }).unwrap();
+        Alert.alert("Removed", `${show.name} removed from favorites`);
+      } else {
+        await addFavorite({
+          tmdbId: show.id,
+          title: show.name,
+          posterPath: show.poster_path,
+          mediaType: "tv",
+          voteAverage: show.vote_average,
+          releaseDate: show.first_air_date,
+        }).unwrap();
+        Alert.alert("Added", `${show.name} added to favorites`);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to update favorites. Please try again.");
     }
   };
 

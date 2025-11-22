@@ -78,15 +78,22 @@ export const backendApi = createApi({
       }),
       invalidatesTags: ["Favorites"],
     }),
-    removeFavorite: builder.mutation<void, number>({
-      query: (tmdbId) => ({
-        url: `/favorites/${tmdbId}`,
+    removeFavorite: builder.mutation<
+      void,
+      { tmdbId: number; mediaType?: string }
+    >({
+      query: ({ tmdbId, mediaType = "movie" }) => ({
+        url: `/favorites/${tmdbId}?mediaType=${mediaType}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Favorites"],
     }),
-    checkFavorite: builder.query<boolean, number>({
-      query: (tmdbId) => `/favorites/${tmdbId}/check`,
+    checkFavorite: builder.query<
+      boolean,
+      { tmdbId: number; mediaType?: string }
+    >({
+      query: ({ tmdbId, mediaType = "movie" }) =>
+        `/favorites/${tmdbId}/check?mediaType=${mediaType}`,
       providesTags: ["Favorites"],
     }),
   }),

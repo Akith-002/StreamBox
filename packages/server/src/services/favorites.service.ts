@@ -1,5 +1,5 @@
 import prisma from "../config/database";
-import { FavoriteDto, AddFavoriteDto } from "@streambox/shared";
+import { FavoriteDto, AddFavoriteDto, MediaType } from "@streambox/shared";
 import { AppError } from "../middleware/errorHandler";
 
 export class FavoritesService {
@@ -14,8 +14,11 @@ export class FavoritesService {
       tmdbId: fav.tmdbId,
       title: fav.title,
       posterPath: fav.posterPath,
+      mediaType: (fav.mediaType || "movie") as MediaType,
       userId: fav.userId,
       createdAt: fav.createdAt.toISOString(),
+      voteAverage: fav.voteAverage,
+      releaseDate: fav.releaseDate,
     }));
   }
 
@@ -23,18 +26,22 @@ export class FavoritesService {
     userId: string,
     data: AddFavoriteDto
   ): Promise<FavoriteDto> {
+    const mediaType = data.mediaType || "movie";
+
     // Check if already exists
     const existing = await prisma.favorite.findUnique({
       where: {
-        userId_tmdbId: {
+        userId_tmdbId_mediaType: {
           userId,
           tmdbId: data.tmdbId,
+          mediaType,
         },
       },
     });
 
     if (existing) {
-      throw new AppError(400, "Movie already in favorites");
+      const itemType = mediaType === "tv" ? "TV show" : "Movie";
+      throw new AppError(400, `${itemType} already in favorites`);
     }
 
     const favorite = await prisma.favorite.create({
@@ -43,6 +50,9 @@ export class FavoritesService {
         tmdbId: data.tmdbId,
         title: data.title,
         posterPath: data.posterPath,
+        mediaType,
+        voteAverage: data.voteAverage,
+        releaseDate: data.releaseDate,
       },
     });
 
@@ -51,15 +61,22 @@ export class FavoritesService {
       tmdbId: favorite.tmdbId,
       title: favorite.title,
       posterPath: favorite.posterPath,
+      mediaType: favorite.mediaType as MediaType,
       userId: favorite.userId,
       createdAt: favorite.createdAt.toISOString(),
+      voteAverage: favorite.voteAverage ?? undefined,
+      releaseDate: favorite.releaseDate ?? undefined,
     };
   }
 
-  async removeFavorite(userId: string, tmdbId: number): Promise<void> {
+  async removeFavorite(
+    userId: string,
+    tmdbId: number,
+    mediaType: MediaType = "movie"
+  ): Promise<void> {
     const favorite = await prisma.favorite.findUnique({
       where: {
-        userId_tmdbId: { userId, tmdbId },
+        userId_tmdbId_mediaType: { userId, tmdbId, mediaType },
       },
     });
 
@@ -72,10 +89,14 @@ export class FavoritesService {
     });
   }
 
-  async isFavorite(userId: string, tmdbId: number): Promise<boolean> {
+  async isFavorite(
+    userId: string,
+    tmdbId: number,
+    mediaType: MediaType = "movie"
+  ): Promise<boolean> {
     const favorite = await prisma.favorite.findUnique({
       where: {
-        userId_tmdbId: { userId, tmdbId },
+        userId_tmdbId_mediaType: { userId, tmdbId, mediaType },
       },
     });
 
