@@ -1,75 +1,80 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { useGetTrendingMoviesQuery } from "../api/tmdbApi";
+import MovieCard from "../components/MovieCard";
 import {
   lightColors,
   spacing,
   fontSizes,
   borderRadius,
 } from "../constants/theme";
+import { Movie } from "../types/Movie";
 
 export default function HomeScreen() {
+  const navigation = useNavigation();
+  const { data, error, isLoading, refetch } = useGetTrendingMoviesQuery();
+
+  const trendingMovies = data?.results ?? [];
+
+  const handleMoviePress = (movieId: number) => {
+    navigation.navigate("Details" as never, { movieId } as never);
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={lightColors.primary} />
+        <Text style={styles.loadingText}>Fetching trending movies…</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Feather name="alert-triangle" size={48} color={lightColors.error} />
+        <Text style={styles.loadingText}>
+          Unable to load movies. Check your connection.
+        </Text>
+        <TouchableOpacity onPress={() => refetch()} style={styles.retryButton}>
+          <Text style={styles.retryText}>Try again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Trending Movies</Text>
-          <Text style={styles.subtitle}>
-            Discover the latest and most popular movies
-          </Text>
-        </View>
-
-        {/* Placeholder Card */}
-        <View style={styles.placeholderCard}>
-          <View style={styles.iconContainer}>
-            <Feather name="film" size={64} color={lightColors.primary} />
-          </View>
-          <Text style={styles.placeholderTitle}>Coming Soon</Text>
-          <Text style={styles.placeholderText}>
-            Movie list will be implemented in Phase 3
-          </Text>
-          <View style={styles.featureList}>
-            <View style={styles.featureItem}>
-              <Feather
-                name="check-circle"
-                size={18}
-                color={lightColors.success}
-              />
-              <Text style={styles.featureText}>TMDB API Integration</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Feather
-                name="check-circle"
-                size={18}
-                color={lightColors.success}
-              />
-              <Text style={styles.featureText}>Movie Cards with Images</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Feather
-                name="check-circle"
-                size={18}
-                color={lightColors.success}
-              />
-              <Text style={styles.featureText}>Details Navigation</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Info Banner */}
-        <View style={styles.infoBanner}>
-          <Feather name="info" size={20} color={lightColors.info} />
-          <View style={styles.infoBannerContent}>
-            <Text style={styles.infoBannerTitle}>Phase 2 Complete</Text>
-            <Text style={styles.infoBannerText}>
-              Authentication and navigation are fully implemented. Next: API
-              Integration.
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Trending This Week</Text>
+        <Text style={styles.subtitle}>Fresh picks from TMDB</Text>
+      </View>
+      <FlatList
+        data={trendingMovies}
+        keyExtractor={(item: Movie) => item.id.toString()}
+        contentContainerStyle={styles.listContent}
+        renderItem={({ item }) => (
+          <MovieCard movie={item} onPress={() => handleMoviePress(item.id)} />
+        )}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Feather name="frown" size={36} color={lightColors.textLight} />
+            <Text style={styles.emptyText}>
+              No trending movies found right now.
             </Text>
           </View>
-        </View>
-      </View>
-    </ScrollView>
+        }
+      />
+    </View>
   );
 }
 
@@ -78,88 +83,55 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: lightColors.background,
   },
-  content: {
-    padding: spacing.lg,
-  },
   header: {
-    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    marginBottom: spacing.sm,
   },
   title: {
     fontSize: fontSizes.xxl,
     fontWeight: "bold" as "bold",
     color: lightColors.text,
-    marginBottom: spacing.xs,
   },
   subtitle: {
     fontSize: fontSizes.md,
     color: lightColors.textSecondary,
+    marginTop: spacing.xs,
   },
-  placeholderCard: {
-    backgroundColor: lightColors.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    alignItems: "center",
-    marginBottom: spacing.lg,
-    borderWidth: 2,
-    borderColor: lightColors.border,
-    borderStyle: "dashed",
+  listContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
   },
-  iconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: lightColors.backgroundSecondary,
+  centered: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: spacing.lg,
-  },
-  placeholderTitle: {
-    fontSize: fontSizes.xl,
-    fontWeight: "bold" as "bold",
-    color: lightColors.text,
-    marginBottom: spacing.sm,
-  },
-  placeholderText: {
-    fontSize: fontSizes.md,
-    color: lightColors.textSecondary,
-    textAlign: "center",
-    marginBottom: spacing.lg,
-  },
-  featureList: {
-    width: "100%",
-    alignItems: "flex-start",
-  },
-  featureItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: spacing.sm,
-  },
-  featureText: {
-    fontSize: fontSizes.sm,
-    color: lightColors.text,
-    marginLeft: spacing.sm,
-  },
-  infoBanner: {
-    flexDirection: "row",
-    backgroundColor: lightColors.info + "15",
-    borderRadius: borderRadius.lg,
     padding: spacing.lg,
-    borderLeftWidth: 4,
-    borderLeftColor: lightColors.info,
   },
-  infoBannerContent: {
-    marginLeft: spacing.md,
-    flex: 1,
-  },
-  infoBannerTitle: {
+  loadingText: {
+    marginTop: spacing.sm,
     fontSize: fontSizes.md,
-    fontWeight: "600" as "600",
-    color: lightColors.text,
-    marginBottom: spacing.xs,
-  },
-  infoBannerText: {
-    fontSize: fontSizes.sm,
     color: lightColors.textSecondary,
-    lineHeight: 20,
+  },
+  retryButton: {
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    backgroundColor: lightColors.primary,
+  },
+  retryText: {
+    color: lightColors.card,
+    fontWeight: "600",
+  },
+  emptyState: {
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: spacing.xl,
+  },
+  emptyText: {
+    marginTop: spacing.sm,
+    color: lightColors.textLight,
+    fontSize: fontSizes.md,
   },
 });
