@@ -12,11 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useGetTrendingMoviesQuery } from "../api/tmdbApi";
 import { useTheme } from "../hooks/useTheme";
 import MovieCard from "../components/MovieCard";
-import {
-  spacing,
-  fontSizes,
-  borderRadius,
-} from "../constants/theme";
+import { spacing, fontSizes, borderRadius } from "../constants/theme";
 import { Movie } from "../types/Movie";
 
 export default function HomeScreen() {
@@ -33,9 +29,7 @@ export default function HomeScreen() {
 
   if (isLoading) {
     return (
-      <View
-        style={[styles.centered, { backgroundColor: colors.background }]}
-      >
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
           Fetching trending movies…
@@ -46,9 +40,7 @@ export default function HomeScreen() {
 
   if (error) {
     return (
-      <View
-        style={[styles.centered, { backgroundColor: colors.background }]}
-      >
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <Feather name="alert-triangle" size={48} color={colors.error} />
         <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
           Unable to load movies. Check your connection.

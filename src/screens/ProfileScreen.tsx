@@ -15,12 +15,7 @@ import { toggleTheme } from "../store/features/uiSlice";
 import { useTheme } from "../hooks/useTheme";
 import { RootState } from "../store/store";
 import Button from "../components/Button";
-import {
-  spacing,
-  fontSizes,
-  borderRadius,
-  shadows,
-} from "../constants/theme";
+import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
 
 export default function ProfileScreen() {
   const dispatch = useDispatch();
@@ -55,11 +50,7 @@ export default function ProfileScreen() {
                   },
                 ]}
               >
-                <Feather
-                  name="user"
-                  size={48}
-                  color={colors.primary}
-                />
+                <Feather name="user" size={48} color={colors.primary} />
               </View>
             )}
           </View>
@@ -110,7 +101,9 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View
+              style={[styles.divider, { backgroundColor: colors.border }]}
+            />
 
             <View style={styles.infoRow}>
               <View
@@ -218,10 +211,7 @@ export default function ProfileScreen() {
                 />
                 <View style={styles.themeTextContent}>
                   <Text
-                    style={[
-                      styles.infoLabel,
-                      { color: colors.textSecondary },
-                    ]}
+                    style={[styles.infoLabel, { color: colors.textSecondary }]}
                   >
                     Dark Mode
                   </Text>

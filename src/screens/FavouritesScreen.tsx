@@ -12,11 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import { removeFavourite } from "../store/features/favouritesSlice";
 import { useTheme } from "../hooks/useTheme";
 import MovieCard from "../components/MovieCard";
-import {
-  spacing,
-  fontSizes,
-  borderRadius,
-} from "../constants/theme";
+import { spacing, fontSizes, borderRadius } from "../constants/theme";
 import { RootState } from "../store/store";
 
 export default function FavouritesScreen() {
@@ -40,16 +36,10 @@ export default function FavouritesScreen() {
 
   const renderMovieCard = ({ item }: any) => (
     <View style={styles.movieCardContainer}>
-      <MovieCard
-        movie={item}
-        onPress={() => handleMoviePress(item.id)}
-      />
+      <MovieCard movie={item} onPress={() => handleMoviePress(item.id)} />
       <TouchableOpacity
         onPress={() => handleRemove(item.id, item.title)}
-        style={[
-          styles.removeButton,
-          { backgroundColor: colors.error },
-        ]}
+        style={[styles.removeButton, { backgroundColor: colors.error }]}
       >
         <Feather name="trash-2" size={16} color={colors.card} />
       </TouchableOpacity>
@@ -57,12 +47,7 @@ export default function FavouritesScreen() {
   );
 
   const emptyComponent = (
-    <View
-      style={[
-        styles.emptyState,
-        { backgroundColor: colors.card },
-      ]}
-    >
+    <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
       <View
         style={[
           styles.iconContainer,
@@ -74,26 +59,21 @@ export default function FavouritesScreen() {
       <Text style={[styles.emptyTitle, { color: colors.text }]}>
         No Favourites Yet
       </Text>
-      <Text
-        style={[styles.emptyText, { color: colors.textSecondary }]}
-      >
+      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
         Start adding movies to your favourites to see them here
       </Text>
     </View>
   );
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: colors.background }]}
-    >
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>
           My Favourites
         </Text>
-        <Text
-          style={[styles.subtitle, { color: colors.textSecondary }]}
-        >
-          {favouriteMovies.length} saved {favouriteMovies.length === 1 ? "movie" : "movies"}
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          {favouriteMovies.length} saved{" "}
+          {favouriteMovies.length === 1 ? "movie" : "movies"}
         </Text>
       </View>
 

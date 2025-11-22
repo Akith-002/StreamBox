@@ -14,9 +14,18 @@ import { Feather } from "@expo/vector-icons";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
 import { useGetMovieDetailsQuery } from "../api/tmdbApi";
-import { addFavourite, removeFavourite } from "../store/features/favouritesSlice";
+import {
+  addFavourite,
+  removeFavourite,
+} from "../store/features/favouritesSlice";
 import { useTheme } from "../hooks/useTheme";
-import { spacing, fontSizes, borderRadius, shadows, lightColors } from "../constants/theme";
+import {
+  spacing,
+  fontSizes,
+  borderRadius,
+  shadows,
+  lightColors,
+} from "../constants/theme";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
 import { RootState } from "../store/store";
 
@@ -172,7 +181,9 @@ export default function DetailsScreen() {
               <Text style={[styles.ratingText, { color: colors.text }]}>
                 {movie.vote_average?.toFixed(1) || "N/A"}
               </Text>
-              <Text style={[styles.ratingCount, { color: colors.textSecondary }]}>
+              <Text
+                style={[styles.ratingCount, { color: colors.textSecondary }]}
+              >
                 ({movie.vote_count?.toLocaleString() || 0})
               </Text>
             </View>
@@ -204,10 +215,7 @@ export default function DetailsScreen() {
               {movie.genres.map((genre: any) => (
                 <View
                   key={genre.id}
-                  style={[
-                    styles.genreTag,
-                    { backgroundColor: colors.primary },
-                  ]}
+                  style={[styles.genreTag, { backgroundColor: colors.primary }]}
                 >
                   <Text style={[styles.genreText, { color: colors.card }]}>
                     {genre.name}
@@ -228,9 +236,7 @@ export default function DetailsScreen() {
               ]}
             >
               <Feather name="clock" size={18} color={colors.primary} />
-              <Text
-                style={[styles.statLabel, { color: colors.textSecondary }]}
-              >
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
                 Runtime
               </Text>
               <Text style={[styles.statValue, { color: colors.text }]}>
@@ -246,9 +252,7 @@ export default function DetailsScreen() {
               ]}
             >
               <Feather name="dollar-sign" size={18} color={colors.primary} />
-              <Text
-                style={[styles.statLabel, { color: colors.textSecondary }]}
-              >
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
                 Budget
               </Text>
               <Text style={[styles.statValue, { color: colors.text }]}>
@@ -264,9 +268,7 @@ export default function DetailsScreen() {
               ]}
             >
               <Feather name="trending-up" size={18} color={colors.primary} />
-              <Text
-                style={[styles.statLabel, { color: colors.textSecondary }]}
-              >
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
                 Revenue
               </Text>
               <Text style={[styles.statValue, { color: colors.text }]}>
@@ -337,7 +339,9 @@ export default function DetailsScreen() {
               ]}
             />
           </View>
-          <Text style={[styles.popularityText, { color: colors.textSecondary }]}>
+          <Text
+            style={[styles.popularityText, { color: colors.textSecondary }]}
+          >
             Popularity: {movie.popularity?.toFixed(1) || "N/A"}
           </Text>
         </View>

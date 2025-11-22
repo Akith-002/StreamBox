@@ -3,12 +3,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTheme } from "../hooks/useTheme";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
-import {
-  borderRadius,
-  fontSizes,
-  shadows,
-  spacing,
-} from "../constants/theme";
+import { borderRadius, fontSizes, shadows, spacing } from "../constants/theme";
 import { Movie } from "../types/Movie";
 
 interface MovieCardProps {
@@ -47,10 +42,7 @@ export default function MovieCard({ movie, onPress }: MovieCardProps) {
         </View>
       )}
       <View style={styles.body}>
-        <Text
-          style={[styles.title, { color: colors.text }]}
-          numberOfLines={2}
-        >
+        <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
           {movie.title}
         </Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
