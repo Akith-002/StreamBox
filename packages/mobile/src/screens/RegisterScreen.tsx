@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -6,8 +6,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -16,23 +16,25 @@ import { registerSchema } from "../utils/validationSchemas";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import { RegisterData } from "../types/Auth";
+import { spacing, fontSizes } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
-import {
-  spacing,
-  fontSizes,
-  borderRadius,
-  SCREEN_HEIGHT,
-} from "../constants/theme";
 import { useRegisterMutation } from "../api/backendApi";
 
-export default function RegisterScreen({ navigation }: { navigation: any }) {
+interface RegisterScreenProps {
+  navigation: {
+    navigate: (screen: string) => void;
+    goBack: () => void;
+  };
+}
+
+export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   const { colors } = useTheme();
   const [register, { isLoading }] = useRegisterMutation();
 
   const {
     control,
     handleSubmit,
-    formState: { errors, touchedFields },
+    formState: { errors },
   } = useForm<RegisterData>({
     resolver: yupResolver(registerSchema),
     defaultValues: {
@@ -42,111 +44,50 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
       email: "",
       password: "",
     },
-    mode: "onBlur",
   });
 
   const onSubmit = async (data: RegisterData) => {
     try {
       await register(data).unwrap();
-
-      Alert.alert(
-        "Registration Successful",
-        "Your account has been created. Please sign in.",
-        [
-          {
-            text: "OK",
-            onPress: () => navigation.navigate("Login"),
-          },
-        ]
-      );
-    } catch (error: any) {
-      console.log("Registration error:", JSON.stringify(error, null, 2));
-
-      let errorMessage = "Registration failed. Please try again.";
-
-      if (error.status === 400) {
-        errorMessage =
-          error.data?.message || "User with this email already exists.";
-      } else if (error.status === 500) {
-        errorMessage = "Server error. Please try again later.";
-      } else if (!error.status) {
-        errorMessage =
-          "Network error. Please check your connection and make sure the server is running.";
-      } else if (error.data?.message) {
-        errorMessage = error.data.message;
-      }
-
-      Alert.alert("Registration Error", errorMessage);
+      Alert.alert("Success", "Account created successfully.", [
+        { text: "Login", onPress: () => navigation.navigate("Login") },
+      ]);
+    } catch {
+      Alert.alert("Error", "Registration failed.");
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        {/* Header with Back Button */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <Feather name="arrow-left" size={24} color={colors.primary} />
-          </TouchableOpacity>
-          <Text style={[styles.backButtonText, { color: colors.primary }]}>
-            Back
-          </Text>
-        </View>
-
-        {/* Hero Section */}
-        <View style={styles.heroSection}>
-          <View
-            style={[
-              styles.logoContainer,
-              { backgroundColor: `${colors.primary}20` },
-            ]}
-          >
-            <Feather name="film" size={40} color={colors.primary} />
-          </View>
-
-          <Text style={[styles.appName, { color: colors.text }]}>
-            Create Account
-          </Text>
-          <Text style={[styles.tagline, { color: colors.textSecondary }]}>
-            Join StreamBox and discover amazing movies
-          </Text>
-        </View>
-
-        {/* Info Banner */}
-        <View
-          style={[
-            styles.infoBanner,
-            {
-              backgroundColor: `${colors.warning}10`,
-              borderColor: colors.warning,
-            },
-          ]}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.infoIconContainer}>
-            <Feather name="alert-circle" size={18} color={colors.warning} />
-          </View>
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            This is a demo. Registration data won't be saved.
-          </Text>
-        </View>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={[styles.backButton, { borderColor: colors.border }]}
+            >
+              <Feather name="arrow-left" size={24} color={colors.text} />
+            </TouchableOpacity>
 
-        {/* Form Section */}
-        <View style={styles.formSection}>
+            <Text style={[styles.title, { color: colors.text }]}>
+              Create Account
+            </Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+              Join StreamBox to start watching.
+            </Text>
+          </View>
+
+          {/* Form */}
           <View style={styles.form}>
-            {/* Name Row */}
             <View style={styles.row}>
-              <View style={styles.halfWidth}>
+              <View style={styles.rowItem}>
                 <Controller
                   name="firstName"
                   control={control}
@@ -154,19 +95,16 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                     <Input
                       label="First Name"
                       placeholder="John"
-                      icon="user"
                       value={value}
                       onChangeText={onChange}
                       onBlur={onBlur}
                       error={errors.firstName?.message}
-                      touched={touchedFields.firstName}
-                      autoCapitalize="words"
                     />
                   )}
                 />
               </View>
-
-              <View style={styles.halfWidth}>
+              <View style={styles.rowSpacer} />
+              <View style={styles.rowItem}>
                 <Controller
                   name="lastName"
                   control={control}
@@ -174,122 +112,92 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                     <Input
                       label="Last Name"
                       placeholder="Doe"
-                      icon="user"
                       value={value}
                       onChangeText={onChange}
                       onBlur={onBlur}
                       error={errors.lastName?.message}
-                      touched={touchedFields.lastName}
-                      autoCapitalize="words"
                     />
                   )}
                 />
               </View>
             </View>
 
-            {/* Username Field */}
             <Controller
               name="username"
               control={control}
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
                   label="Username"
-                  placeholder="johndoe"
+                  placeholder="@johndoe"
                   icon="at-sign"
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
                   error={errors.username?.message}
-                  touched={touchedFields.username}
                   autoCapitalize="none"
-                  autoCorrect={false}
                 />
               )}
             />
 
-            {/* Email Field */}
             <Controller
               name="email"
               control={control}
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
-                  label="Email Address"
-                  placeholder="john.doe@example.com"
+                  label="Email"
+                  placeholder="name@example.com"
                   icon="mail"
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
                   error={errors.email?.message}
-                  touched={touchedFields.email}
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  autoCorrect={false}
                 />
               )}
             />
 
-            {/* Password Field */}
             <Controller
               name="password"
               control={control}
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
                   label="Password"
-                  placeholder="At least 6 characters"
+                  placeholder="Create a password"
                   icon="lock"
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
                   error={errors.password?.message}
-                  touched={touchedFields.password}
                   secureTextEntry
-                  autoCapitalize="none"
                 />
               )}
             />
 
-            {/* Create Account Button */}
-            <Button
-              title={isLoading ? "Creating Account..." : "Create Account"}
-              onPress={handleSubmit(onSubmit)}
-              loading={isLoading}
-              disabled={isLoading}
-            />
+            <View style={styles.buttonContainer}>
+              <Button
+                title={isLoading ? "Creating Account..." : "Sign Up"}
+                onPress={handleSubmit(onSubmit)}
+                loading={isLoading}
+                disabled={isLoading}
+              />
+            </View>
           </View>
-        </View>
 
-        {/* Divider */}
-        <View style={styles.divider}>
-          <View
-            style={[styles.dividerLine, { backgroundColor: colors.border }]}
-          />
-          <Text style={[styles.dividerText, { color: colors.textLight }]}>
-            or
-          </Text>
-          <View
-            style={[styles.dividerLine, { backgroundColor: colors.border }]}
-          />
-        </View>
-
-        {/* Sign In Link */}
-        <View style={styles.signInSection}>
-          <Text style={[styles.signInText, { color: colors.textSecondary }]}>
-            Already have an account?
-          </Text>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("Login")}
-            disabled={isLoading}
-          >
-            <Text style={[styles.signInLink, { color: colors.primary }]}>
-              Sign In
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+              Already have an account?
             </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Bottom Spacing */}
-        <View style={styles.bottomSpacing} />
-      </ScrollView>
-    </KeyboardAvoidingView>
+            <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+              <Text style={[styles.footerLink, { color: colors.primary }]}>
+                Log In
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -299,106 +207,58 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    minHeight: SCREEN_HEIGHT * 0.95,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xl,
+    paddingTop: 60,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: spacing.lg,
-  },
-  backButton: {
-    padding: spacing.sm,
-    marginLeft: -spacing.sm,
-  },
-  backButtonText: {
-    fontSize: fontSizes.md,
-    fontWeight: "700",
-    marginLeft: spacing.xs,
-  },
-  heroSection: {
-    alignItems: "center",
     marginBottom: spacing.xl,
   },
-  logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: borderRadius.xl,
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: spacing.lg,
   },
-  appName: {
-    fontSize: fontSizes.xxl,
-    fontWeight: "bold",
-    marginBottom: spacing.sm,
+  title: {
+    fontSize: 30,
+    fontWeight: "800",
+    marginBottom: 8,
   },
-  tagline: {
+  subtitle: {
     fontSize: fontSizes.md,
-    textAlign: "center",
-  },
-  infoBanner: {
-    flexDirection: "row",
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    marginBottom: spacing.xl,
-    borderLeftWidth: 4,
-    borderTopWidth: 1,
-    borderRightWidth: 1,
-    borderBottomWidth: 1,
-    alignItems: "center",
-  },
-  infoIconContainer: {
-    marginRight: spacing.md,
-  },
-  infoText: {
-    fontSize: fontSizes.sm,
-    flex: 1,
-    lineHeight: 20,
-  },
-  formSection: {
-    marginBottom: spacing.xl,
+    fontWeight: "500",
   },
   form: {
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   row: {
     flexDirection: "row",
-    gap: spacing.md,
   },
-  halfWidth: {
+  rowItem: {
     flex: 1,
   },
-  divider: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: spacing.xl,
-    gap: spacing.md,
+  rowSpacer: {
+    width: spacing.md,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
+  buttonContainer: {
+    marginTop: spacing.sm,
   },
-  dividerText: {
-    fontSize: fontSizes.sm,
-    fontWeight: "500",
-  },
-  signInSection: {
+  footer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: spacing.sm,
-    marginBottom: spacing.xl,
+    marginTop: spacing.xl,
+    gap: 6,
   },
-  signInText: {
+  footerText: {
     fontSize: fontSizes.md,
   },
-  signInLink: {
+  footerLink: {
     fontSize: fontSizes.md,
-    fontWeight: "700",
-  },
-  bottomSpacing: {
-    height: spacing.lg,
+    fontWeight: "bold",
   },
 });

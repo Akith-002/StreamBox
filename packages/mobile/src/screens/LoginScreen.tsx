@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -6,30 +6,31 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
   TouchableOpacity,
-  ActivityIndicator,
+  StatusBar,
 } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useDispatch } from "react-redux";
-import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { setCredentials } from "../store/features/authSlice";
 import { loginSchema } from "../utils/validationSchemas";
 import Input from "../components/Input";
 import Button from "../components/Button";
+import Logo from "../components/Logo";
 import { LoginCredentials } from "../types/Auth";
-import {
-  spacing,
-  fontSizes,
-  borderRadius,
-  SCREEN_HEIGHT,
-} from "../constants/theme";
+import { spacing, fontSizes } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { useLoginMutation } from "../api/backendApi";
 import { saveToken, saveUser } from "../utils/secureStorage";
 
-export default function LoginScreen({ navigation }: { navigation: any }) {
+interface LoginScreenProps {
+  navigation: {
+    navigate: (screen: string) => void;
+  };
+}
+
+export default function LoginScreen({ navigation }: LoginScreenProps) {
   const dispatch = useDispatch();
   const { colors } = useTheme();
   const [login, { isLoading }] = useLoginMutation();
@@ -37,120 +38,71 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
   const {
     control,
     handleSubmit,
-    formState: { errors, touchedFields },
+    formState: { errors },
   } = useForm<LoginCredentials>({
     resolver: yupResolver(loginSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-    },
-    mode: "onBlur",
+    defaultValues: { username: "", password: "" },
   });
 
   const onSubmit = async (data: LoginCredentials) => {
     try {
       const result = await login(data).unwrap();
-
-      // Save token and user to secure storage
       await saveToken(result.token);
       await saveUser(result.user);
-
-      // Update Redux state
       dispatch(setCredentials(result));
-
-      // Navigation is handled automatically by RootNavigator
-    } catch (error: any) {
-      let errorMessage = "Login failed. Please try again.";
-
-      if (error.status === 401) {
-        errorMessage = "Invalid username or password.";
-      } else if (error.originalStatus === 503) {
-        errorMessage = "Server is unavailable. Please try again later.";
-      } else if (!error.status) {
-        errorMessage = "Network error. Please check your connection.";
-      }
-
-      Alert.alert("Login Error", errorMessage);
+    } catch {
+      // Handle login error
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle="light-content" />
+
+      {/* Subtle Background Gradient */}
+      <LinearGradient
+        colors={[colors.card, colors.background]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        {/* Hero Section */}
-        <View style={styles.heroSection}>
-          {/* Logo Container */}
-          <View style={styles.logoContainer}>
-            <View
-              style={[
-                styles.logoCircle,
-                { backgroundColor: `${colors.primary}20` },
-              ]}
-            >
-              <Feather name="film" size={56} color={colors.primary} />
-            </View>
-          </View>
-
-          {/* Branding */}
-          <Text style={[styles.appName, { color: colors.text }]}>
-            StreamBox
-          </Text>
-          <Text style={[styles.tagline, { color: colors.textSecondary }]}>
-            Discover a world of movies
-          </Text>
-        </View>
-
-        {/* Info Banner */}
-        <View
-          style={[
-            styles.demoBanner,
-            { backgroundColor: `${colors.info}10`, borderColor: colors.info },
-          ]}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.demoIconContainer}>
-            <Feather name="info" size={18} color={colors.info} />
-          </View>
-          <View style={styles.demoContent}>
-            <Text style={[styles.demoTitle, { color: colors.text }]}>
-              Login with Email
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.logoWrapper}>
+              <Logo size={48} showText={false} />
+            </View>
+            <Text style={[styles.title, { color: colors.text }]}>
+              Let&apos;s sign you in.
             </Text>
-            <Text style={[styles.demoText, { color: colors.textSecondary }]}>
-              Use your email address as username
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+              Welcome back. You&apos;ve been missed!
             </Text>
           </View>
-        </View>
 
-        {/* Form Section */}
-        <View style={styles.formSection}>
-          <Text style={[styles.formTitle, { color: colors.text }]}>
-            Sign In
-          </Text>
-
+          {/* Form */}
           <View style={styles.form}>
             <Controller
               name="username"
               control={control}
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
-                  label="Email"
-                  placeholder="Enter your email"
+                  label="Email or Username"
+                  placeholder="name@example.com"
                   icon="mail"
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
                   error={errors.username?.message}
-                  touched={touchedFields.username}
                   autoCapitalize="none"
-                  autoCorrect={false}
-                  keyboardType="email-address"
                 />
               )}
             />
@@ -167,54 +119,41 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
                   onChangeText={onChange}
                   onBlur={onBlur}
                   error={errors.password?.message}
-                  touched={touchedFields.password}
                   secureTextEntry
-                  autoCapitalize="none"
                 />
               )}
             />
 
-            <Button
-              title={isLoading ? "Signing In..." : "Sign In"}
-              onPress={handleSubmit(onSubmit)}
-              loading={isLoading}
-              disabled={isLoading}
-            />
+            <TouchableOpacity style={styles.forgotPassword}>
+              <Text style={[styles.forgotText, { color: colors.textLight }]}>
+                Forgot Password?
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.buttonContainer}>
+              <Button
+                title={isLoading ? "Signing In..." : "Sign In"}
+                onPress={handleSubmit(onSubmit)}
+                loading={isLoading}
+                disabled={isLoading}
+              />
+            </View>
           </View>
-        </View>
 
-        {/* Divider */}
-        <View style={styles.divider}>
-          <View
-            style={[styles.dividerLine, { backgroundColor: colors.border }]}
-          />
-          <Text style={[styles.dividerText, { color: colors.textLight }]}>
-            or
-          </Text>
-          <View
-            style={[styles.dividerLine, { backgroundColor: colors.border }]}
-          />
-        </View>
-
-        {/* Sign Up Link */}
-        <View style={styles.signUpSection}>
-          <Text style={[styles.signUpText, { color: colors.textSecondary }]}>
-            Don't have an account?
-          </Text>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("Register")}
-            disabled={isLoading}
-          >
-            <Text style={[styles.signUpLink, { color: colors.primary }]}>
-              Create Account
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+              Don&apos;t have an account?
             </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Bottom Spacing */}
-        <View style={styles.bottomSpacing} />
-      </ScrollView>
-    </KeyboardAvoidingView>
+            <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+              <Text style={[styles.footerLink, { color: colors.primary }]}>
+                Register
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -224,101 +163,53 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
-    minHeight: SCREEN_HEIGHT * 0.95,
-  },
-  heroSection: {
-    alignItems: "center",
-    marginBottom: spacing.xl,
-    marginTop: spacing.lg,
-  },
-  logoContainer: {
-    marginBottom: spacing.lg,
-  },
-  logoCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    paddingHorizontal: spacing.xl,
     justifyContent: "center",
-    alignItems: "center",
+    paddingBottom: spacing.xl,
   },
-  appName: {
-    fontSize: fontSizes.xxxl,
-    fontWeight: "bold",
+  header: {
+    marginBottom: spacing.xl * 1.5,
+  },
+  logoWrapper: {
+    marginBottom: spacing.lg,
+    alignSelf: "flex-start",
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "800",
     marginBottom: spacing.sm,
   },
-  tagline: {
-    fontSize: fontSizes.md,
-    textAlign: "center",
-    marginBottom: spacing.lg,
-  },
-  demoBanner: {
-    flexDirection: "row",
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    marginBottom: spacing.xl,
-    borderLeftWidth: 4,
-    borderTopWidth: 1,
-    borderRightWidth: 1,
-    borderBottomWidth: 1,
-  },
-  demoIconContainer: {
-    marginRight: spacing.md,
-    marginTop: spacing.xs,
-  },
-  demoContent: {
-    flex: 1,
-  },
-  demoTitle: {
-    fontSize: fontSizes.sm,
-    fontWeight: "600",
-    marginBottom: spacing.sm,
-  },
-  demoText: {
-    fontSize: fontSizes.xs,
-    lineHeight: 18,
-  },
-  formSection: {
-    marginBottom: spacing.xl,
-  },
-  formTitle: {
-    fontSize: fontSizes.xxl,
-    fontWeight: "bold",
-    marginBottom: spacing.lg,
+  subtitle: {
+    fontSize: fontSizes.lg,
+    fontWeight: "500",
   },
   form: {
     gap: spacing.md,
   },
-  divider: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: spacing.xl,
-    gap: spacing.md,
+  forgotPassword: {
+    alignSelf: "flex-end",
+    marginTop: -spacing.xs,
+    marginBottom: spacing.sm,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
+  forgotText: {
     fontSize: fontSizes.sm,
-    fontWeight: "500",
+    fontWeight: "600",
   },
-  signUpSection: {
+  buttonContainer: {
+    marginTop: spacing.sm,
+  },
+  footer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: spacing.sm,
-    marginBottom: spacing.xl,
+    marginTop: spacing.xl * 2,
+    gap: 6,
   },
-  signUpText: {
+  footerText: {
     fontSize: fontSizes.md,
   },
-  signUpLink: {
+  footerLink: {
     fontSize: fontSizes.md,
-    fontWeight: "700",
-  },
-  bottomSpacing: {
-    height: spacing.lg,
+    fontWeight: "bold",
   },
 });
