@@ -100,6 +100,19 @@ export const tmdbApi = createApi({
         )}&page=${page}`,
     }),
 
+    // Person
+    getPersonDetails: builder.query({
+      query: (personId) => `/person/${personId}?api_key=${TMDB_API_KEY}`,
+    }),
+    getPersonMovieCredits: builder.query({
+      query: (personId) =>
+        `/person/${personId}/movie_credits?api_key=${TMDB_API_KEY}`,
+    }),
+    getPersonTVCredits: builder.query({
+      query: (personId) =>
+        `/person/${personId}/tv_credits?api_key=${TMDB_API_KEY}`,
+    }),
+
     // Discover
     discoverMovies: builder.query({
       query: (params = {}) => {
@@ -153,6 +166,10 @@ export const {
   useSearchMoviesQuery,
   useSearchTVQuery,
   useSearchPersonQuery,
+  // Person
+  useGetPersonDetailsQuery,
+  useGetPersonMovieCreditsQuery,
+  useGetPersonTVCreditsQuery,
   // Discover
   useDiscoverMoviesQuery,
   useDiscoverTVQuery,

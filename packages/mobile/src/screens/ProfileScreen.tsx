@@ -7,14 +7,16 @@ import {
   Image,
   Switch,
   TouchableOpacity,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { logOut } from "../store/features/authSlice";
 import { toggleTheme } from "../store/features/uiSlice";
 import { useTheme } from "../hooks/useTheme";
 import { RootState } from "../store/store";
-import Button from "../components/Button";
 import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
 
 export default function ProfileScreen() {
@@ -30,481 +32,317 @@ export default function ProfileScreen() {
     dispatch(toggleTheme());
   };
 
-  return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      showsVerticalScrollIndicator={false}
+  // Reusable Settings Row Component
+  const SettingItem = ({
+    icon,
+    label,
+    value,
+    isSwitch = false,
+    onPress,
+    showChevron = true,
+    color = colors.text,
+  }: any) => (
+    <TouchableOpacity
+      style={[styles.settingItem, { borderBottomColor: colors.border }]}
+      onPress={onPress}
+      disabled={isSwitch}
+      activeOpacity={0.7}
     >
-      {/* Profile Header */}
-      <View style={[styles.profileHeader, { backgroundColor: colors.card }]}>
-        <View style={styles.avatarContainer}>
-          {user?.image ? (
-            <Image
-              source={{ uri: user.image }}
-              style={[styles.avatar, { borderColor: colors.primary }]}
-            />
-          ) : (
-            <View
-              style={[
-                styles.avatarPlaceholder,
-                {
-                  backgroundColor: `${colors.primary}20`,
-                  borderColor: colors.primary,
-                },
-              ]}
-            >
-              <Feather name="user" size={56} color={colors.primary} />
-            </View>
-          )}
-          <View
-            style={[styles.statusBadge, { backgroundColor: colors.success }]}
-          >
-            <Feather name="check" size={12} color="#FFF" />
-          </View>
+      <View style={styles.settingLeft}>
+        <View
+          style={[styles.iconContainer, { backgroundColor: `${colors.card}` }]}
+        >
+          <Feather name={icon} size={18} color={colors.primary} />
         </View>
+        <Text style={[styles.settingLabel, { color: color }]}>{label}</Text>
+      </View>
 
-        <Text style={[styles.name, { color: colors.text }]}>
-          {user?.firstName} {user?.lastName}
-        </Text>
-        <Text style={[styles.username, { color: colors.textSecondary }]}>
-          @{user?.username}
-        </Text>
-        {user?.email && (
-          <Text style={[styles.email, { color: colors.textLight }]}>
-            {user.email}
+      <View style={styles.settingRight}>
+        {value && (
+          <Text style={[styles.settingValue, { color: colors.textSecondary }]}>
+            {value}
           </Text>
         )}
+        {isSwitch ? (
+          <Switch
+            value={theme === "dark"}
+            onValueChange={handleThemeToggle}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor={"#FFF"}
+            ios_backgroundColor={colors.border}
+            style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
+          />
+        ) : (
+          showChevron && (
+            <Feather name="chevron-right" size={16} color={colors.textLight} />
+          )
+        )}
       </View>
+    </TouchableOpacity>
+  );
 
-      <View style={styles.content}>
-        {/* Account Information Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Account Information
-          </Text>
+  const SectionHeader = ({ title }: { title: string }) => (
+    <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>
+      {title.toUpperCase()}
+    </Text>
+  );
 
-          <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            {/* Full Name */}
-            <View style={styles.infoRow}>
-              <View
-                style={[
-                  styles.infoIconContainer,
-                  { backgroundColor: `${colors.primary}20` },
-                ]}
-              >
-                <Feather name="user" size={20} color={colors.primary} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text
-                  style={[styles.infoLabel, { color: colors.textSecondary }]}
-                >
-                  Full Name
-                </Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>
-                  {user?.firstName} {user?.lastName}
-                </Text>
-              </View>
-            </View>
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        {/* 1. Modern Gradient Header */}
+        <View style={styles.headerContainer}>
+          <LinearGradient
+            colors={[colors.primary, `${colors.primary}00`]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.headerGradient}
+          />
 
-            <View
-              style={[styles.divider, { backgroundColor: colors.border }]}
-            />
-
-            {/* Username */}
-            <View style={styles.infoRow}>
-              <View
-                style={[
-                  styles.infoIconContainer,
-                  { backgroundColor: `${colors.primary}20` },
-                ]}
-              >
-                <Feather name="at-sign" size={20} color={colors.primary} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text
-                  style={[styles.infoLabel, { color: colors.textSecondary }]}
-                >
-                  Username
-                </Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>
-                  {user?.username}
-                </Text>
-              </View>
-            </View>
-
-            {/* Email */}
-            {user?.email && (
-              <>
-                <View
-                  style={[styles.divider, { backgroundColor: colors.border }]}
-                />
-                <View style={styles.infoRow}>
-                  <View
-                    style={[
-                      styles.infoIconContainer,
-                      { backgroundColor: `${colors.primary}20` },
-                    ]}
-                  >
-                    <Feather name="mail" size={20} color={colors.primary} />
-                  </View>
-                  <View style={styles.infoContent}>
-                    <Text
-                      style={[
-                        styles.infoLabel,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      Email
-                    </Text>
-                    <Text style={[styles.infoValue, { color: colors.text }]}>
-                      {user.email}
-                    </Text>
-                  </View>
-                </View>
-              </>
-            )}
-
-            {/* Gender */}
-            {user?.gender && (
-              <>
-                <View
-                  style={[styles.divider, { backgroundColor: colors.border }]}
-                />
-                <View style={styles.infoRow}>
-                  <View
-                    style={[
-                      styles.infoIconContainer,
-                      { backgroundColor: `${colors.primary}20` },
-                    ]}
-                  >
-                    <Feather name="info" size={20} color={colors.primary} />
-                  </View>
-                  <View style={styles.infoContent}>
-                    <Text
-                      style={[
-                        styles.infoLabel,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      Gender
-                    </Text>
-                    <Text style={[styles.infoValue, { color: colors.text }]}>
-                      {user.gender.charAt(0).toUpperCase() +
-                        user.gender.slice(1)}
-                    </Text>
-                  </View>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-
-        {/* Appearance Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Appearance
-          </Text>
-
-          <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <View style={styles.themeRow}>
-              <View style={styles.themeContent}>
+          <View style={styles.profileInfo}>
+            <View style={styles.avatarWrapper}>
+              {user?.image ? (
+                <Image source={{ uri: user.image }} style={styles.avatar} />
+              ) : (
                 <View
                   style={[
-                    styles.themeIconContainer,
-                    { backgroundColor: `${colors.primary}20` },
+                    styles.avatarPlaceholder,
+                    { backgroundColor: colors.card },
                   ]}
                 >
-                  <Feather
-                    name={theme === "dark" ? "moon" : "sun"}
-                    size={20}
-                    color={colors.primary}
-                  />
+                  <Feather name="user" size={40} color={colors.primary} />
                 </View>
-                <View style={styles.themeTextContent}>
-                  <Text
-                    style={[styles.infoLabel, { color: colors.textSecondary }]}
-                  >
-                    Dark Mode
-                  </Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>
-                    {theme === "dark" ? "Enabled" : "Disabled"}
-                  </Text>
-                </View>
+              )}
+              <View
+                style={[styles.editBadge, { backgroundColor: colors.accent }]}
+              >
+                <Feather name="edit-2" size={12} color="#FFF" />
               </View>
-              <Switch
-                value={theme === "dark"}
-                onValueChange={handleThemeToggle}
-                trackColor={{
-                  false: colors.border,
-                  true: colors.primary,
-                }}
-                thumbColor={colors.card}
-              />
+            </View>
+
+            <Text style={[styles.name, { color: colors.text }]}>
+              {user?.firstName} {user?.lastName}
+            </Text>
+            <Text style={[styles.username, { color: colors.textSecondary }]}>
+              @{user?.username}
+            </Text>
+
+            {/* Stats / Membership Chip */}
+            <View
+              style={[
+                styles.chipContainer,
+                { backgroundColor: `${colors.primary}15` },
+              ]}
+            >
+              <Feather name="award" size={14} color={colors.primary} />
+              <Text style={[styles.chipText, { color: colors.primary }]}>
+                Premium Member
+              </Text>
             </View>
           </View>
         </View>
 
-        {/* Settings Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Support
-          </Text>
-
-          <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <TouchableOpacity style={styles.settingRow}>
-              <View
-                style={[
-                  styles.infoIconContainer,
-                  { backgroundColor: `${colors.primary}20` },
-                ]}
-              >
-                <Feather name="help-circle" size={20} color={colors.primary} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text
-                  style={[styles.infoLabel, { color: colors.textSecondary }]}
-                >
-                  Help & Support
-                </Text>
-              </View>
-              <Feather
-                name="chevron-right"
-                size={20}
-                color={colors.textLight}
-              />
-            </TouchableOpacity>
-
-            <View
-              style={[styles.divider, { backgroundColor: colors.border }]}
+        {/* 2. Clean Grouped Lists */}
+        <View style={styles.contentContainer}>
+          <SectionHeader title="Personal Info" />
+          <View style={[styles.sectionGroup, { backgroundColor: colors.card }]}>
+            <SettingItem
+              icon="mail"
+              label="Email"
+              value={user?.email}
+              showChevron={false}
             />
-
-            <TouchableOpacity style={styles.settingRow}>
-              <View
-                style={[
-                  styles.infoIconContainer,
-                  { backgroundColor: `${colors.primary}20` },
-                ]}
-              >
-                <Feather name="shield" size={20} color={colors.primary} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text
-                  style={[styles.infoLabel, { color: colors.textSecondary }]}
-                >
-                  Privacy Policy
-                </Text>
-              </View>
-              <Feather
-                name="chevron-right"
-                size={20}
-                color={colors.textLight}
-              />
-            </TouchableOpacity>
-
-            <View
-              style={[styles.divider, { backgroundColor: colors.border }]}
+            <SettingItem
+              icon="user"
+              label="Gender"
+              value={
+                user?.gender
+                  ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1)
+                  : ""
+              }
+              showChevron={false}
             />
-
-            <TouchableOpacity style={styles.settingRow}>
-              <View
-                style={[
-                  styles.infoIconContainer,
-                  { backgroundColor: `${colors.primary}20` },
-                ]}
-              >
-                <Feather name="file-text" size={20} color={colors.primary} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text
-                  style={[styles.infoLabel, { color: colors.textSecondary }]}
-                >
-                  Terms of Service
-                </Text>
-              </View>
-              <Feather
-                name="chevron-right"
-                size={20}
-                color={colors.textLight}
-              />
-            </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Logout Button */}
-        <View style={styles.section}>
-          <Button title="Sign Out" onPress={handleLogout} variant="outline" />
-        </View>
+          <SectionHeader title="App Settings" />
+          <View style={[styles.sectionGroup, { backgroundColor: colors.card }]}>
+            <SettingItem
+              icon={theme === "dark" ? "moon" : "sun"}
+              label="Dark Mode"
+              isSwitch
+            />
+            <SettingItem icon="bell" label="Notifications" value="On" />
+            <SettingItem icon="globe" label="Language" value="English" />
+          </View>
 
-        {/* App Version */}
-        <View style={styles.footer}>
+          <SectionHeader title="Support" />
+          <View style={[styles.sectionGroup, { backgroundColor: colors.card }]}>
+            <SettingItem icon="help-circle" label="Help Center" />
+            <SettingItem icon="shield" label="Privacy Policy" />
+            <SettingItem icon="file-text" label="Terms of Service" />
+          </View>
+
+          <TouchableOpacity
+            style={[styles.logoutButton, { borderColor: colors.error }]}
+            onPress={handleLogout}
+          >
+            <Feather name="log-out" size={18} color={colors.error} />
+            <Text style={[styles.logoutText, { color: colors.error }]}>
+              Log Out
+            </Text>
+          </TouchableOpacity>
+
           <Text style={[styles.versionText, { color: colors.textLight }]}>
-            StreamBox v1.0.0
+            Version 1.0.0 • Build 2025.11
           </Text>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  profileHeader: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
+  // Header Styles
+  headerContainer: {
     alignItems: "center",
-    borderBottomLeftRadius: borderRadius.xl,
-    borderBottomRightRadius: borderRadius.xl,
-    ...shadows.medium,
+    paddingTop: 60, // Push down for status bar
+    paddingBottom: spacing.xl,
+    marginBottom: spacing.sm,
   },
-  avatarContainer: {
+  headerGradient: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 200,
+    opacity: 0.15,
+  },
+  profileInfo: {
+    alignItems: "center",
+  },
+  avatarWrapper: {
+    marginBottom: spacing.md,
     position: "relative",
-    marginBottom: spacing.lg,
   },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 3,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 4,
+    borderColor: "rgba(255,255,255,0.1)",
   },
   avatarPlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 3,
+    borderWidth: 4,
+    borderColor: "rgba(255,255,255,0.1)",
   },
-  statusBadge: {
+  editBadge: {
     position: "absolute",
     bottom: 0,
     right: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 3,
-    borderColor: "inherit",
+    padding: 8,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "rgba(0,0,0,0.5)",
   },
   name: {
-    fontSize: fontSizes.xl,
+    fontSize: 22,
     fontWeight: "bold",
-    marginBottom: spacing.xs,
+    marginBottom: 4,
   },
   username: {
     fontSize: fontSizes.md,
-    marginBottom: spacing.xs,
-  },
-  email: {
-    fontSize: fontSizes.sm,
-  },
-  content: {
-    padding: spacing.lg,
-  },
-  section: {
-    marginBottom: spacing.xl,
-  },
-  sectionTitle: {
-    fontSize: fontSizes.lg,
-    fontWeight: "600",
     marginBottom: spacing.md,
   },
-  card: {
-    borderRadius: borderRadius.lg,
+  chipContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+  },
+  chipText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  // Content Styles
+  contentContainer: {
+    paddingHorizontal: spacing.lg,
+  },
+  sectionHeader: {
+    fontSize: 12,
+    fontWeight: "700",
+    marginBottom: spacing.sm,
+    marginTop: spacing.md,
+    letterSpacing: 1,
+    marginLeft: 4,
+  },
+  sectionGroup: {
+    borderRadius: borderRadius.xl,
     overflow: "hidden",
-    ...shadows.small,
-    borderWidth: 1,
+    marginBottom: spacing.sm,
   },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  infoIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: borderRadius.md,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: spacing.md,
-  },
-  infoContent: {
-    flex: 1,
-  },
-  infoLabel: {
-    fontSize: fontSizes.sm,
-    marginBottom: 2,
-  },
-  infoValue: {
-    fontSize: fontSizes.md,
-    fontWeight: "500",
-  },
-  divider: {
-    height: 1,
-    marginHorizontal: spacing.md,
-  },
-  settingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  themeRow: {
+  settingItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 0.5,
   },
-  themeContent: {
+  settingLeft: {
     flexDirection: "row",
     alignItems: "center",
-    flex: 1,
+    gap: 12,
   },
-  themeIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: borderRadius.md,
+  iconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: spacing.md,
   },
-  themeTextContent: {
-    flex: 1,
+  settingLabel: {
+    fontSize: fontSizes.md,
+    fontWeight: "500",
   },
-  footer: {
+  settingRight: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingVertical: spacing.lg,
+    gap: 8,
+  },
+  settingValue: {
+    fontSize: fontSizes.sm,
+  },
+
+  // Footer
+  logoutButton: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: spacing.xl,
+    paddingVertical: 16,
+    borderWidth: 1,
+    borderRadius: borderRadius.xl,
+    gap: 8,
+  },
+  logoutText: {
+    fontWeight: "600",
+    fontSize: fontSizes.md,
   },
   versionText: {
-    fontSize: fontSizes.xs,
+    textAlign: "center",
+    fontSize: 12,
+    marginTop: spacing.lg,
+    marginBottom: spacing.xl,
   },
 });

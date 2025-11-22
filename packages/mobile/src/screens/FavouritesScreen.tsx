@@ -8,6 +8,7 @@ import {
   Dimensions,
   Image,
   Animated,
+  StatusBar,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSelector, useDispatch } from "react-redux";
@@ -21,7 +22,6 @@ import {
 import { useTheme } from "../hooks/useTheme";
 import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
-import { RootState } from "../store/store";
 import { isMovie, isTVShow } from "../types/Movie";
 
 const screenWidth = Dimensions.get("window").width;
@@ -34,33 +34,25 @@ export default function FavouritesScreen() {
   const allFavourites = useSelector(selectAllFavourites);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    console.log("Favourites updated:", allFavourites.length, allFavourites);
-  }, [allFavourites]);
+  // Ensure we have a valid array
+  const favouritesList = Array.isArray(allFavourites) ? allFavourites : [];
+
+  // Animation ref for the list
+  const scrollY = new Animated.Value(0);
 
   const handleItemPress = (item: any) => {
-    if (item.mediaType === "movie") {
-      navigation.navigate(
-        "HomeTab" as never,
-        {
-          screen: "Details",
-          params: { movieId: item.id },
-        } as never
-      );
-    } else if (item.mediaType === "tv") {
-      navigation.navigate(
-        "HomeTab" as never,
-        {
-          screen: "TVDetails",
-          params: { tvId: item.id },
-        } as never
-      );
-    }
+    navigation.navigate("HomeTab", {
+      screen: item.mediaType === "movie" ? "Details" : "TVDetails",
+      params:
+        item.mediaType === "movie" ? { movieId: item.id } : { tvId: item.id },
+    });
   };
 
   const handleRemove = (id: number, mediaType: "movie" | "tv") => {
     const key = `${mediaType}-${id}`;
     setDeletingIds((prev) => new Set(prev).add(key));
+
+    // Small delay for visual feedback before removal
     setTimeout(() => {
       if (mediaType === "movie") {
         dispatch(removeFavourite(id));
@@ -96,8 +88,8 @@ export default function FavouritesScreen() {
       : isTVShow(data)
       ? data.first_air_date
       : "";
-    const year = date ? date.slice(0, 4) : "";
-    const icon = item.mediaType === "movie" ? "film" : "tv";
+    const year = date ? date.slice(0, 4) : "N/A";
+    const rating = data.vote_average?.toFixed(1) || "0.0";
 
     return (
       <Animated.View
@@ -105,83 +97,78 @@ export default function FavouritesScreen() {
           styles.cardWrapper,
           {
             opacity: isDeleting ? 0 : 1,
+            transform: [{ scale: isDeleting ? 0.8 : 1 }],
           },
         ]}
       >
         <TouchableOpacity
-          style={styles.movieCard}
-          onPress={() => handleItemPress(item)}
           activeOpacity={0.7}
+          onPress={() => handleItemPress(item)}
+          style={styles.cardContainer}
         >
-          {/* Poster Container with Glassmorphism */}
-          <View style={styles.posterContainer}>
+          {/* Image Container */}
+          <View
+            style={[styles.posterContainer, { backgroundColor: colors.card }]}
+          >
             {posterUri ? (
               <Image source={{ uri: posterUri }} style={styles.posterImage} />
             ) : (
-              <LinearGradient
-                colors={[`${colors.primary}30`, `${colors.accent}30`]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.posterImage}
-              >
-                <Feather
-                  name={icon as any}
-                  size={40}
-                  color={colors.textLight}
-                />
-              </LinearGradient>
+              <View style={styles.placeholderPoster}>
+                <Feather name="image" size={24} color={colors.textLight} />
+              </View>
             )}
 
-            {/* Media Type Badge */}
-            <View style={styles.mediaTypeBadge}>
-              <Feather name={icon as any} size={12} color="#FFFFFF" />
-            </View>
+            {/* Gradient Overlay for Text Readability */}
+            <LinearGradient
+              colors={["transparent", "rgba(0,0,0,0.8)"]}
+              style={styles.gradientOverlay}
+            />
 
-            {/* Delete Button with Glassmorphism */}
+            {/* Top Right: Glassmorphism Remove Button */}
             <TouchableOpacity
+              style={styles.removeButton}
               onPress={() => handleRemove(item.id, item.mediaType)}
-              style={styles.deleteButtonContainer}
+              activeOpacity={0.6}
             >
-              <View
-                style={[
-                  styles.deleteButton,
-                  { backgroundColor: `${colors.error}E6` },
-                ]}
-              >
-                <Feather name="trash-2" size={16} color="#FFFFFF" />
+              <View style={styles.glassCircle}>
+                <Feather name="x" size={16} color="#FFF" />
               </View>
             </TouchableOpacity>
+
+            {/* Top Left: Media Type Tag */}
+            <View style={styles.mediaTag}>
+              <Text style={styles.mediaTagText}>
+                {item.mediaType === "movie" ? "MOVIE" : "TV"}
+              </Text>
+            </View>
           </View>
 
-          {/* Info Section with Glassmorphism */}
-          <View style={styles.infoSection}>
-            <Text
-              style={[styles.movieTitle, { color: colors.text }]}
-              numberOfLines={2}
-            >
-              {title}
-            </Text>
-
-            {/* Rating Badge with Gradient */}
-            <View style={styles.ratingContainer}>
-              <LinearGradient
-                colors={[colors.primary, colors.accent]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.ratingBadge}
+          {/* Minimal Info Section */}
+          <View style={styles.infoContainer}>
+            <View style={styles.titleRow}>
+              <Text
+                style={[styles.title, { color: colors.text }]}
+                numberOfLines={1}
               >
-                <Feather name="star" size={10} color="#FFF" />
-                <Text style={styles.ratingText}>
-                  {data.vote_average?.toFixed(1) || "N/A"}
-                </Text>
-              </LinearGradient>
-              {year && (
+                {title}
+              </Text>
+            </View>
+
+            <View style={styles.metaRow}>
+              <View style={styles.ratingContainer}>
+                <Feather name="star" size={12} color={colors.primary} />
                 <Text
-                  style={[styles.yearText, { color: colors.textSecondary }]}
+                  style={[styles.metaText, { color: colors.textSecondary }]}
                 >
-                  {year}
+                  {rating}
                 </Text>
-              )}
+              </View>
+              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                •
+              </Text>
+              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                {year}
+              </Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -189,87 +176,52 @@ export default function FavouritesScreen() {
     );
   };
 
-  const emptyComponent = (
-    <View style={styles.emptyStateContainer}>
-      <View
-        style={[
-          styles.emptyState,
-          { backgroundColor: colors.card, borderColor: colors.border },
-        ]}
-      >
-        {/* Animated Icon Container with Gradient */}
-        <View style={styles.iconContainer}>
-          <LinearGradient
-            colors={[`${colors.primary}30`, `${colors.accent}30`]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.iconGradient}
-          >
-            <Feather name="heart" size={64} color={colors.primary} />
-          </LinearGradient>
-        </View>
-
-        <Text style={[styles.emptyTitle, { color: colors.text }]}>
-          No Favorites Yet
+  const ListHeader = () => (
+    <View style={styles.headerContainer}>
+      <View>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          My List
         </Text>
-        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-          Start adding movies and TV shows to your favorites to see them here
+        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+          {favouritesList.length}{" "}
+          {favouritesList.length === 1 ? "Title" : "Titles"} Saved
         </Text>
-
-        {/* Gradient Button */}
-        <TouchableOpacity
-          onPress={() => navigation.navigate("HomeTab" as never)}
-          activeOpacity={0.8}
-        >
-          <LinearGradient
-            colors={[colors.primary, colors.accent]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.browseButton}
-          >
-            <Feather name="search" size={18} color="#FFFFFF" />
-            <Text style={styles.browseButtonText}>Browse Content</Text>
-          </LinearGradient>
-        </TouchableOpacity>
       </View>
+      {/* Optional: Add a Filter icon here if needed later */}
+    </View>
+  );
+
+  const EmptyState = () => (
+    <View style={styles.emptyContainer}>
+      <View style={[styles.emptyIconCircle, { backgroundColor: colors.card }]}>
+        <Feather name="heart" size={40} color={colors.textLight} />
+      </View>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>
+        Your list is empty
+      </Text>
+      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+        Content you add to your favorites will appear here.
+      </Text>
+      <TouchableOpacity
+        style={[styles.browseButton, { backgroundColor: colors.primary }]}
+        onPress={() => navigation.navigate("HomeTab")}
+      >
+        <Text style={styles.browseButtonText}>Explore Content</Text>
+      </TouchableOpacity>
     </View>
   );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header with Gradient */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            My Favorites
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {allFavourites.length} saved{" "}
-            {allFavourites.length === 1 ? "item" : "items"}
-          </Text>
-        </View>
-        {allFavourites.length > 0 && (
-          <LinearGradient
-            colors={[colors.primary, colors.accent]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.badge}
-          >
-            <Text style={styles.badgeText}>{allFavourites.length}</Text>
-          </LinearGradient>
-        )}
-      </View>
-
-      {/* Grid List */}
       <FlatList
-        data={allFavourites}
+        data={favouritesList}
         keyExtractor={(item) => `${item.mediaType}-${item.id}`}
         renderItem={renderFavouriteCard}
         numColumns={2}
         columnWrapperStyle={styles.columnWrapper}
         contentContainerStyle={styles.listContent}
-        ListEmptyComponent={emptyComponent}
-        scrollEnabled={true}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={EmptyState}
         showsVerticalScrollIndicator={false}
       />
     </View>
@@ -280,183 +232,162 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
+  listContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl * 2,
+  },
+  headerContainer: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.xl,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
   },
-  headerContent: {
-    flex: 1,
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: "800",
+    letterSpacing: -0.5,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    fontSize: fontSizes.sm,
+  headerSubtitle: {
+    fontSize: fontSizes.md,
     fontWeight: "500",
+    marginTop: 4,
   },
-  badge: {
-    width: 56,
-    height: 56,
-    borderRadius: borderRadius.round,
-    justifyContent: "center",
-    alignItems: "center",
-    ...shadows.medium,
-  },
-  badgeText: {
-    fontSize: fontSizes.lg,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-  },
-  listContent: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
+
+  // Card Styles
   columnWrapper: {
     justifyContent: "space-between",
     marginBottom: spacing.lg,
   },
   cardWrapper: {
     width: cardWidth,
-    marginBottom: spacing.md,
   },
-  movieCard: {
-    borderRadius: borderRadius.xl,
-    overflow: "hidden",
+  cardContainer: {
+    gap: 8,
   },
   posterContainer: {
-    position: "relative",
     width: "100%",
-    height: cardWidth * 1.5,
-    borderRadius: borderRadius.xl,
+    height: cardWidth * 1.45,
+    borderRadius: borderRadius.lg,
     overflow: "hidden",
-    ...shadows.large,
+    position: "relative",
+    ...shadows.small,
   },
   posterImage: {
     width: "100%",
     height: "100%",
+    resizeMode: "cover",
+  },
+  placeholderPoster: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  pressOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  glassOverlay: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    borderRadius: borderRadius.round,
-    padding: spacing.lg,
-  },
-  mediaTypeBadge: {
+  gradientOverlay: {
     position: "absolute",
-    top: spacing.sm,
-    left: spacing.sm,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    paddingHorizontal: spacing.sm,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: "40%",
+  },
+
+  // Floating UI Elements on Poster
+  removeButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    zIndex: 10,
+  },
+  glassCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    // REMOVED: backdropFilter (not supported in React Native styles)
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  mediaTag: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: borderRadius.md,
-    zIndex: 10,
+    borderRadius: 4,
   },
-  deleteButtonContainer: {
-    position: "absolute",
-    top: spacing.sm,
-    right: spacing.sm,
-    zIndex: 10,
+  mediaTagText: {
+    color: "#FFF",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
-  deleteButton: {
-    width: 40,
-    height: 40,
-    borderRadius: borderRadius.xl,
-    justifyContent: "center",
+
+  // Info Styles
+  infoContainer: {
+    paddingHorizontal: 4,
+  },
+  titleRow: {
+    marginBottom: 2,
+  },
+  title: {
+    fontSize: fontSizes.md,
+    fontWeight: "600",
+    lineHeight: 20,
+  },
+  metaRow: {
+    flexDirection: "row",
     alignItems: "center",
-    ...shadows.medium,
-  },
-  infoSection: {
-    paddingTop: spacing.sm,
-  },
-  movieTitle: {
-    fontSize: fontSizes.sm,
-    fontWeight: "700",
-    lineHeight: 18,
-    marginBottom: spacing.xs,
+    gap: 6,
   },
   ratingContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.sm,
-  },
-  ratingBadge: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: borderRadius.md,
   },
-  ratingText: {
-    color: "#FFFFFF",
-    fontSize: 10,
-    fontWeight: "bold",
-  },
-  yearText: {
-    fontSize: fontSizes.xs,
+  metaText: {
+    fontSize: 12,
     fontWeight: "500",
   },
-  emptyStateContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
-  },
-  emptyState: {
-    borderRadius: borderRadius.xl,
-    padding: spacing.xl,
+
+  // Empty State
+  emptyContainer: {
     alignItems: "center",
-    minHeight: 450,
     justifyContent: "center",
-    ...shadows.medium,
-    borderWidth: 1,
+    marginTop: 100,
+    paddingHorizontal: spacing.xl,
   },
-  iconContainer: {
-    marginBottom: spacing.xl,
-  },
-  iconGradient: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+  emptyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: "center",
     alignItems: "center",
-    ...shadows.large,
+    marginBottom: spacing.lg,
   },
   emptyTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: spacing.md,
+    fontSize: fontSizes.xl,
+    fontWeight: "700",
+    marginBottom: spacing.sm,
   },
-  emptyText: {
+  emptySubtitle: {
     fontSize: fontSizes.md,
     textAlign: "center",
     marginBottom: spacing.xl,
     lineHeight: 22,
-    paddingHorizontal: spacing.lg,
   },
   browseButton: {
-    flexDirection: "row",
-    alignItems: "center",
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    borderRadius: borderRadius.xl,
-    gap: spacing.sm,
-    ...shadows.large,
+    paddingVertical: spacing.md,
+    // FIXED: changed .full to .round (or just use a number like 30)
+    borderRadius: borderRadius.round,
+    ...shadows.medium,
   },
   browseButtonText: {
+    color: "#FFF",
+    fontWeight: "600",
     fontSize: fontSizes.md,
-    fontWeight: "700",
-    color: "#FFFFFF",
   },
 });

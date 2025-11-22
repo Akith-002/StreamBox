@@ -8,8 +8,9 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
+// 1. Import SafeAreaView from the correct library
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import {
   useDiscoverMoviesQuery,
@@ -78,252 +79,193 @@ export default function DiscoverScreen() {
     contentType === "movie" ? movieGenres?.genres : tvGenres?.genres;
 
   const handleMediaPress = (id: number, mediaType: "movie" | "tv") => {
-    if (mediaType === "movie") {
-      navigation.navigate("HomeTab", {
-        screen: "Details",
-        params: { movieId: id },
-      });
-    } else {
-      navigation.navigate("HomeTab", {
-        screen: "TVDetails",
-        params: { tvId: id },
-      });
-    }
+    navigation.navigate("HomeTab", {
+      screen: mediaType === "movie" ? "Details" : "TVDetails",
+      params: mediaType === "movie" ? { movieId: id } : { tvId: id },
+    });
   };
 
   const renderMediaCard = ({ item }: { item: any }) => (
     <MediaCard item={item} onPress={handleMediaPress} />
   );
 
+  const FilterChip = ({
+    label,
+    isActive,
+    onPress,
+    icon,
+  }: {
+    label: string;
+    isActive: boolean;
+    onPress: () => void;
+    icon?: any;
+  }) => (
+    <TouchableOpacity
+      style={[
+        styles.chip,
+        {
+          backgroundColor: isActive ? colors.primary : "transparent",
+          borderColor: isActive ? colors.primary : colors.border,
+          borderWidth: isActive ? 0 : 1,
+        },
+      ]}
+      onPress={onPress}
+    >
+      {icon && (
+        <Feather
+          name={icon}
+          size={14}
+          color={isActive ? "#FFF" : colors.text}
+          style={{ marginRight: 6 }}
+        />
+      )}
+      <Text
+        style={[styles.chipText, { color: isActive ? "#FFF" : colors.text }]}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Content Type Toggle */}
-      <View style={styles.toggleContainer}>
-        <TouchableOpacity
-          style={[
-            styles.toggleButton,
-            contentType === "movie" && styles.toggleButtonActive,
-            {
-              backgroundColor:
-                contentType === "movie" ? colors.primary : colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-          onPress={() => {
-            setContentType("movie");
-            setSelectedGenre(null);
-          }}
-          activeOpacity={0.7}
+    // 2. Use SafeAreaView here to avoid the notch overlap
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      {/* TOP TOGGLE */}
+      <View style={styles.headerSection}>
+        <View
+          style={[styles.segmentContainer, { backgroundColor: colors.card }]}
         >
-          <Feather
-            name="film"
-            size={18}
-            color={contentType === "movie" ? "#FFFFFF" : colors.text}
-          />
-          <Text
-            style={[
-              styles.toggleText,
-              { color: contentType === "movie" ? "#FFFFFF" : colors.text },
-            ]}
-          >
-            Movies
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.toggleButton,
-            contentType === "tv" && styles.toggleButtonActive,
-            {
-              backgroundColor:
-                contentType === "tv" ? colors.primary : colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-          onPress={() => {
-            setContentType("tv");
-            setSelectedGenre(null);
-          }}
-          activeOpacity={0.7}
-        >
-          <Feather
-            name="tv"
-            size={18}
-            color={contentType === "tv" ? "#FFFFFF" : colors.text}
-          />
-          <Text
-            style={[
-              styles.toggleText,
-              { color: contentType === "tv" ? "#FFFFFF" : colors.text },
-            ]}
-          >
-            TV Shows
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Sort Options */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.sortContainer}
-        contentContainerStyle={styles.sortContent}
-      >
-        <TouchableOpacity
-          style={[
-            styles.sortChip,
-            sortBy === "popularity.desc" && styles.sortChipActive,
-            {
-              backgroundColor:
-                sortBy === "popularity.desc" ? colors.primary : colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-          onPress={() => setSortBy("popularity.desc")}
-        >
-          <Text
-            style={[
-              styles.sortChipText,
-              {
-                color: sortBy === "popularity.desc" ? "#FFFFFF" : colors.text,
-              },
-            ]}
-          >
-            Popular
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.sortChip,
-            sortBy === "vote_average.desc" && styles.sortChipActive,
-            {
-              backgroundColor:
-                sortBy === "vote_average.desc" ? colors.primary : colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-          onPress={() => setSortBy("vote_average.desc")}
-        >
-          <Text
-            style={[
-              styles.sortChipText,
-              {
-                color: sortBy === "vote_average.desc" ? "#FFFFFF" : colors.text,
-              },
-            ]}
-          >
-            Top Rated
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.sortChip,
-            (sortBy === "primary_release_date.desc" ||
-              sortBy === "first_air_date.desc") &&
-              styles.sortChipActive,
-            {
-              backgroundColor:
-                sortBy === "primary_release_date.desc" ||
-                sortBy === "first_air_date.desc"
-                  ? colors.primary
-                  : colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-          onPress={() =>
-            setSortBy(
-              contentType === "movie"
-                ? "primary_release_date.desc"
-                : "first_air_date.desc"
-            )
-          }
-        >
-          <Text
-            style={[
-              styles.sortChipText,
-              {
-                color:
-                  sortBy === "primary_release_date.desc" ||
-                  sortBy === "first_air_date.desc"
-                    ? "#FFFFFF"
-                    : colors.text,
-              },
-            ]}
-          >
-            Latest
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-
-      {/* Genres */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.genresContainer}
-        contentContainerStyle={styles.genresContent}
-      >
-        <TouchableOpacity
-          style={[
-            styles.genreChip,
-            selectedGenre === null && styles.genreChipActive,
-            {
-              backgroundColor:
-                selectedGenre === null ? colors.accent : colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-          onPress={() => setSelectedGenre(null)}
-        >
-          <Text
-            style={[
-              styles.genreChipText,
-              { color: selectedGenre === null ? "#FFFFFF" : colors.text },
-            ]}
-          >
-            All
-          </Text>
-        </TouchableOpacity>
-
-        {genres?.map((genre: any) => (
           <TouchableOpacity
-            key={genre.id}
             style={[
-              styles.genreChip,
-              selectedGenre === genre.id && styles.genreChipActive,
-              {
-                backgroundColor:
-                  selectedGenre === genre.id ? colors.accent : colors.card,
-                borderColor: colors.border,
-              },
+              styles.segmentButton,
+              contentType === "movie" && styles.segmentActive,
             ]}
-            onPress={() => setSelectedGenre(genre.id)}
+            onPress={() => {
+              setContentType("movie");
+              setSelectedGenre(null);
+            }}
           >
             <Text
               style={[
-                styles.genreChipText,
-                { color: selectedGenre === genre.id ? "#FFFFFF" : colors.text },
+                styles.segmentText,
+                {
+                  color:
+                    contentType === "movie"
+                      ? colors.primary
+                      : colors.textLight || "#888",
+                  fontWeight: contentType === "movie" ? "700" : "500",
+                },
               ]}
             >
-              {genre.name}
+              Movies
             </Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
 
-      {/* Results */}
+          <TouchableOpacity
+            style={[
+              styles.segmentButton,
+              contentType === "tv" && styles.segmentActive,
+            ]}
+            onPress={() => {
+              setContentType("tv");
+              setSelectedGenre(null);
+            }}
+          >
+            <Text
+              style={[
+                styles.segmentText,
+                {
+                  color:
+                    contentType === "tv"
+                      ? colors.primary
+                      : colors.textLight || "#888",
+                  fontWeight: contentType === "tv" ? "700" : "500",
+                },
+              ]}
+            >
+              TV Shows
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* FILTERS AREA */}
+      <View style={styles.filtersContainer}>
+        {/* Sort Options */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <FilterChip
+            label="Popular"
+            icon="trending-up"
+            isActive={sortBy === "popularity.desc"}
+            onPress={() => setSortBy("popularity.desc")}
+          />
+          <FilterChip
+            label="Top Rated"
+            icon="star"
+            isActive={sortBy === "vote_average.desc"}
+            onPress={() => setSortBy("vote_average.desc")}
+          />
+          <FilterChip
+            label="Latest"
+            icon="calendar"
+            isActive={
+              sortBy === "primary_release_date.desc" ||
+              sortBy === "first_air_date.desc"
+            }
+            onPress={() =>
+              setSortBy(
+                contentType === "movie"
+                  ? "primary_release_date.desc"
+                  : "first_air_date.desc"
+              )
+            }
+          />
+        </ScrollView>
+
+        {/* Genres */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { marginTop: spacing.sm },
+          ]}
+        >
+          <FilterChip
+            label="All"
+            isActive={selectedGenre === null}
+            onPress={() => setSelectedGenre(null)}
+          />
+          {genres?.map((genre: any) => (
+            <FilterChip
+              key={genre.id}
+              label={genre.name}
+              isActive={selectedGenre === genre.id}
+              onPress={() => setSelectedGenre(genre.id)}
+            />
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* RESULTS GRID */}
       {isLoading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.textLight }]}>
-            Discovering...
-          </Text>
         </View>
       ) : error ? (
         <View style={styles.centered}>
-          <Feather name="alert-triangle" size={48} color={colors.error} />
-          <Text style={[styles.errorText, { color: colors.error }]}>
+          <Feather
+            name="alert-circle"
+            size={40}
+            color={colors.error || "red"}
+          />
+          <Text style={[styles.errorText, { color: colors.text }]}>
             Unable to load content
           </Text>
         </View>
@@ -338,7 +280,7 @@ export default function DiscoverScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -346,83 +288,53 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  toggleContainer: {
-    flexDirection: "row",
-    margin: spacing.lg,
-    gap: spacing.md,
+  headerSection: {
+    padding: spacing.lg,
+    paddingBottom: spacing.md,
   },
-  toggleButton: {
-    flex: 1,
+  segmentContainer: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: spacing.md,
     borderRadius: borderRadius.lg,
-    gap: spacing.sm,
-    borderWidth: 1,
-    ...shadows.small,
+    padding: 4,
+    height: 48,
   },
-  toggleButtonActive: {
-    ...shadows.medium,
+  segmentButton: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: borderRadius.md,
   },
-  toggleText: {
+  segmentActive: {
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  segmentText: {
     fontSize: fontSizes.md,
-    fontWeight: "700",
   },
-  sortContainer: {
+  filtersContainer: {
     marginBottom: spacing.md,
   },
-  sortContent: {
+  scrollContent: {
     paddingHorizontal: spacing.lg,
-    gap: spacing.md,
-  },
-  sortChip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-  },
-  sortChipActive: {
-    ...shadows.small,
-  },
-  sortChipText: {
-    fontSize: fontSizes.sm,
-    fontWeight: "600",
-  },
-  genresContainer: {
-    marginBottom: spacing.lg,
-  },
-  genresContent: {
-    paddingHorizontal: spacing.lg,
+    paddingRight: spacing.lg,
     gap: spacing.sm,
   },
-  genreChip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-  },
-  genreChipActive: {
-    ...shadows.small,
-  },
-  genreChipText: {
-    fontSize: fontSizes.md,
-    fontWeight: "700",
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
+  chip: {
+    flexDirection: "row",
     alignItems: "center",
-    padding: spacing.lg,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 25,
+    marginRight: 8,
   },
-  loadingText: {
-    marginTop: spacing.md,
-    fontSize: fontSizes.md,
-  },
-  errorText: {
-    marginTop: spacing.md,
-    fontSize: fontSizes.md,
-    textAlign: "center",
+  chipText: {
+    fontSize: fontSizes.sm,
+    fontWeight: "600",
   },
   resultsList: {
     paddingHorizontal: spacing.lg,
@@ -431,5 +343,14 @@ const styles = StyleSheet.create({
   row: {
     justifyContent: "space-between",
     marginBottom: spacing.lg,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 10,
+  },
+  errorText: {
+    fontSize: fontSizes.md,
   },
 });

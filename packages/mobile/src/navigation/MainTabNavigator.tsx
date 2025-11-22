@@ -5,6 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import HomeScreen from "../screens/HomeScreen";
 import DetailsScreen from "../screens/DetailsScreen";
 import TVDetailsScreen from "../screens/TVDetailsScreen";
+import PersonDetailsScreen from "../screens/PersonDetailsScreen";
 import SearchScreen from "../screens/SearchScreen";
 import DiscoverScreen from "../screens/DiscoverScreen";
 import FavouritesScreen from "../screens/FavouritesScreen";
@@ -25,6 +26,7 @@ function HomeStack() {
       <Stack.Screen name="HomeList" component={HomeScreen} />
       <Stack.Screen name="Details" component={DetailsScreen} />
       <Stack.Screen name="TVDetails" component={TVDetailsScreen} />
+      <Stack.Screen name="PersonDetails" component={PersonDetailsScreen} />
     </Stack.Navigator>
   );
 }

@@ -155,9 +155,9 @@ export default function SearchScreen() {
   }, []);
 
   const handleItemPress = (item: MediaItem) => {
-    // Don't navigate for people - they don't have detail pages
-    if (isPerson(item)) {
-      return;
+    // Save current search query to history when user taps a result
+    if (searchQuery.trim().length >= 2) {
+      saveToHistory(searchQuery);
     }
 
     if (isMovie(item)) {
@@ -169,6 +169,11 @@ export default function SearchScreen() {
       navigation.navigate("HomeTab", {
         screen: "TVDetails",
         params: { tvId: item.id },
+      });
+    } else if (isPerson(item)) {
+      navigation.navigate("HomeTab", {
+        screen: "PersonDetails",
+        params: { personId: item.id },
       });
     }
   };
@@ -206,20 +211,14 @@ export default function SearchScreen() {
       icon = "user";
     }
 
-    const isPeopleResult = isPerson(item);
-    const ResultWrapper = isPeopleResult ? View : TouchableOpacity;
-    const wrapperProps = isPeopleResult
-      ? {}
-      : { onPress: () => handleItemPress(item), activeOpacity: 0.7 };
-
     return (
-      <ResultWrapper
+      <TouchableOpacity
         style={[
           styles.resultItem,
           { backgroundColor: colors.card, borderColor: colors.border },
-          isPeopleResult && styles.resultItemDisabled,
         ]}
-        {...wrapperProps}
+        onPress={() => handleItemPress(item)}
+        activeOpacity={0.7}
       >
         {imageUri ? (
           <Image source={{ uri: imageUri }} style={styles.resultImage} />
@@ -252,10 +251,8 @@ export default function SearchScreen() {
             </View>
           ) : null}
         </View>
-        {!isPeopleResult ? (
-          <Feather name="chevron-right" size={20} color={colors.textLight} />
-        ) : null}
-      </ResultWrapper>
+        <Feather name="chevron-right" size={20} color={colors.textLight} />
+      </TouchableOpacity>
     );
   };
 
@@ -470,9 +467,6 @@ const styles = StyleSheet.create({
   resultRating: {
     fontSize: fontSizes.sm,
     fontWeight: "600",
-  },
-  resultItemDisabled: {
-    opacity: 0.6,
   },
   historyContainer: {
     flex: 1,
