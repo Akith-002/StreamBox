@@ -1,0 +1,22 @@
+{
+  "name": "@streambox/shared",
+  "version": "1.0.0",
+  "description": "Shared TypeScript types and DTOs for StreamBox monorepo",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "keywords": [
+    "streambox",
+    "shared",
+    "types",
+    "dtos"
+  ],
+  "author": "StreamBox Team",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "~5.9.2"
+  }
+}
