@@ -136,7 +136,7 @@ StreamBox is a full-stack movie browsing application demonstrating industry-stan
 - ✅ Pull-to-refresh functionality
 - ✅ Optimistic UI updates
 
-### Extra Credit Features
+### Additional Highlights
 
 - ✅ **Monorepo Architecture** - Enterprise-grade project organization
 - ✅ **End-to-End Type Safety** - Shared TypeScript types between frontend/backend
@@ -519,10 +519,6 @@ StreamBox/                          # Root monorepo
 ├── .gitignore                      # Git ignore rules
 ├── README.md                       # This file
 ├── ARCHITECTURE.md                 # Architecture documentation
-├── IMPLEMENTATION_PLAN.md          # Detailed implementation plan
-├── PROJECT_STATUS.md               # Project status and progress
-├── SUBMISSION_CHECKLIST.md         # Assignment submission checklist
-├── DEMO_VIDEO_SCRIPT.md            # Demo video guide
 │
 ├── packages/
 │   │
@@ -806,8 +802,6 @@ A comprehensive 3-minute demo video showcasing all features is available:
   - Infinite scroll and pull-to-refresh
   - Backend showcase
 
-For recording your own demo, see [DEMO_VIDEO_SCRIPT.md](./DEMO_VIDEO_SCRIPT.md).
-
 ---
 
 ## 💻 Development Workflow
@@ -1016,9 +1010,8 @@ npm run prisma:generate
 If you encounter issues not covered here:
 
 1. Check [GitHub Issues](https://github.com/Akith-002/StreamBox/issues)
-2. Review [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for detailed setup
-3. Consult [ARCHITECTURE.md](./ARCHITECTURE.md) for system design
-4. Open a new issue with:
+2. Consult [ARCHITECTURE.md](./ARCHITECTURE.md) for system design
+3. Open a new issue with:
    - Error message
    - Steps to reproduce
    - Your environment (OS, Node version, etc.)
@@ -1027,7 +1020,7 @@ If you encounter issues not covered here:
 
 ## 🤝 Contributing
 
-This is an academic project, but contributions are welcome for learning purposes!
+Contributions are welcome!
 
 ### How to Contribute
 
@@ -1082,8 +1075,6 @@ SOFTWARE.
 
 - **GitHub**: [@Akith-002](https://github.com/Akith-002)
 - **Repository**: [StreamBox](https://github.com/Akith-002/StreamBox)
-- **Course**: IN3210 Mobile Applications Development
-- **Institution**: [Your University Name]
 
 ---
 
@@ -1094,17 +1085,12 @@ SOFTWARE.
 - **Prisma Team** - Type-safe ORM
 - **Redux Team** - Redux Toolkit and RTK Query
 - **React Navigation** - Navigation library
-- **Course Instructors** - Guidance and feedback
 
 ---
 
 ## 📚 Additional Documentation
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - Detailed system architecture
-- [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) - Phase-by-phase implementation guide
-- [PROJECT_STATUS.md](./PROJECT_STATUS.md) - Current project status
-- [SUBMISSION_CHECKLIST.md](./SUBMISSION_CHECKLIST.md) - Assignment requirements checklist
-- [DEMO_VIDEO_SCRIPT.md](./DEMO_VIDEO_SCRIPT.md) - Demo video recording guide
 
 ---
 
