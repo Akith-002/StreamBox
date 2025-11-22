@@ -17,6 +17,7 @@ import { useGetMovieDetailsQuery } from "../api/tmdbApi";
 import {
   addFavourite,
   removeFavourite,
+  selectFavouriteMovies,
 } from "../store/features/favouritesSlice";
 import { useTheme } from "../hooks/useTheme";
 import {
@@ -40,9 +41,7 @@ export default function DetailsScreen() {
   const { data: movie, isLoading, error } = useGetMovieDetailsQuery(movieId);
   const [isFavouriteAnimating, setIsFavouriteAnimating] = useState(false);
 
-  const favouriteMovies = useSelector(
-    (state: RootState) => state.favourites.favouriteMovies
-  );
+  const favouriteMovies = useSelector(selectFavouriteMovies);
   const isFavourite = movie
     ? favouriteMovies.some((m) => m.id === movie.id)
     : false;

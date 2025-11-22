@@ -10,4 +10,17 @@ export interface Movie {
   vote_count: number;
   popularity: number;
   genre_ids?: number[];
+  // Extended properties for detailed movie view
+  genres?: Array<{ id: number; name: string }>;
+  tagline?: string;
+  runtime?: number;
+  budget?: number;
+  revenue?: number;
+  production_companies?: Array<{
+    id: number;
+    name: string;
+    logo_path: string | null;
+  }>;
+  status?: string;
+  imdb_id?: string | null;
 }

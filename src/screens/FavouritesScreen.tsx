@@ -9,7 +9,10 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
-import { removeFavourite } from "../store/features/favouritesSlice";
+import {
+  removeFavourite,
+  selectFavouriteMovies,
+} from "../store/features/favouritesSlice";
 import { useTheme } from "../hooks/useTheme";
 import MovieCard from "../components/MovieCard";
 import { spacing, fontSizes, borderRadius } from "../constants/theme";
@@ -19,9 +22,7 @@ export default function FavouritesScreen() {
   const navigation = useNavigation<any>();
   const dispatch = useDispatch();
   const { colors } = useTheme();
-  const favouriteMovies = useSelector(
-    (state: RootState) => state.favourites.favouriteMovies
-  );
+  const favouriteMovies = useSelector(selectFavouriteMovies);
 
   const handleMoviePress = (movieId: number) => {
     navigation.navigate("HomeTab", {
