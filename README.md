@@ -37,7 +37,7 @@ A production-ready, cross-platform mobile application demonstrating modern full-
 
 ## 🎯 Overview
 
-StreamBox is a full-stack movie browsing application built as part of the IN3210 Mobile Applications Development course. It demonstrates industry-standard practices used by companies like Netflix, Spotify, and Uber, featuring:
+StreamBox is a full-stack movie browsing application demonstrating industry-standard practices used by companies like Netflix, Spotify, and Uber, featuring:
 
 - **Backend for Frontend (BFF) Pattern** - Custom Node.js backend proxying TMDB API
 - **Monorepo Architecture** - Organized workspace with shared TypeScript types
@@ -46,21 +46,13 @@ StreamBox is a full-stack movie browsing application built as part of the IN3210
 - **Modern UX** - Skeleton loaders, infinite scroll, shared element transitions, dark mode
 - **Cloud Persistence** - Favorites synced across devices via custom backend
 
-### Assignment Details
-
-- **Course**: IN3210 Mobile Applications Development
-- **Assignment**: Assignment 2 - Cross-Platform Mobile Development
-- **Domain**: Entertainment & Media
-- **Deadline**: November 23, 2025
-- **Score**: 125/125 (100 base + 25 bonus)
-
 ---
 
 ## ✨ Features
 
-### Core Features (Mandatory - 100 Marks)
+### Core Features
 
-#### 🔐 Authentication (15 marks)
+#### 🔐 Authentication
 
 - ✅ User registration with validation
 - ✅ Secure login with JWT tokens
@@ -68,7 +60,7 @@ StreamBox is a full-stack movie browsing application built as part of the IN3210
 - ✅ Argon2 password hashing (OWASP recommended)
 - ✅ Hardware-encrypted token storage (Expo SecureStore)
 
-#### 🧭 Navigation (10 marks)
+#### 🧭 Navigation
 
 - ✅ Stack navigation for authentication flow
 - ✅ Bottom tab navigation with 5 tabs (Home, Search, Discover, Favorites, Profile)
@@ -76,7 +68,7 @@ StreamBox is a full-stack movie browsing application built as part of the IN3210
 - ✅ Type-safe navigation parameters
 - ✅ Smooth screen transitions
 
-#### 🎬 API Integration (15 marks)
+#### 🎬 API Integration
 
 - ✅ Custom Node.js backend proxying TMDB API (BFF pattern)
 - ✅ Multiple endpoints (trending, popular, top-rated, search, details)
@@ -84,7 +76,7 @@ StreamBox is a full-stack movie browsing application built as part of the IN3210
 - ✅ Error handling with user-friendly messages
 - ✅ Automatic request caching (RTK Query)
 
-#### 📦 State Management (15 marks)
+#### 📦 State Management
 
 - ✅ Redux Toolkit for global state
 - ✅ Auth slice with login/logout actions
@@ -92,7 +84,7 @@ StreamBox is a full-stack movie browsing application built as part of the IN3210
 - ✅ Cloud-synced favorites via backend API
 - ✅ Optimistic UI updates
 
-#### 🎨 UI/UX Design (15 marks)
+#### 🎨 UI/UX Design
 
 - ✅ Professional, clean interface
 - ✅ Responsive grid layouts
@@ -100,7 +92,7 @@ StreamBox is a full-stack movie browsing application built as part of the IN3210
 - ✅ Smooth animations and transitions
 - ✅ Consistent spacing and typography
 
-#### 💻 Code Quality (20 marks)
+#### 💻 Code Quality
 
 - ✅ TypeScript with strict mode
 - ✅ Monorepo architecture (npm workspaces)
@@ -108,22 +100,16 @@ StreamBox is a full-stack movie browsing application built as part of the IN3210
 - ✅ ESLint + Prettier + Husky configuration
 - ✅ Comprehensive documentation
 
-#### 🎥 Demo & Presentation (10 marks)
+### Advanced Features
 
-- ✅ 3-minute demo video showcasing all features
-- ✅ 12+ high-quality screenshots (light & dark modes)
-- ✅ Clear demonstration of functionality
-
-### Bonus Features (25 Marks)
-
-#### 🌙 Dark Mode (5 marks)
+#### 🌙 Dark Mode
 
 - ✅ Toggle in profile settings
 - ✅ Consistent theme across all screens
 - ✅ Smooth theme transitions
 - ✅ Theme persistence with Redux
 
-#### 🖥️ Custom Backend (10 marks)
+#### 🖥️ Custom Backend
 
 - ✅ Node.js + Express server
 - ✅ Prisma ORM with SQLite database
@@ -134,7 +120,7 @@ StreamBox is a full-stack movie browsing application built as part of the IN3210
 - ✅ Error handling middleware
 - ✅ CORS and Helmet security
 
-#### 👤 Biometric Authentication (5 marks)
+#### 👤 Biometric Authentication
 
 - ✅ FaceID/TouchID support (Expo Local Authentication)
 - ✅ Auto-login on app launch
@@ -142,7 +128,7 @@ StreamBox is a full-stack movie browsing application built as part of the IN3210
 - ✅ Hardware support detection
 - ✅ Fallback to password login
 
-#### ✨ Advanced UX (5 marks)
+#### ✨ Advanced UX
 
 - ✅ Shared element transitions (React Native Reanimated)
 - ✅ Skeleton loading placeholders
@@ -1173,26 +1159,6 @@ SOFTWARE.
 - **Features**: 30+ implemented
 - **Screens**: 10+ mobile screens
 - **API Endpoints**: 15+
-- **Development Time**: 24 days (phased approach)
-
----
-
-## 🎓 Learning Outcomes
-
-By studying this project, you'll learn:
-
-- ✅ React Native mobile development with Expo
-- ✅ Redux Toolkit for state management
-- ✅ Node.js backend development with Express
-- ✅ RESTful API design and implementation
-- ✅ JWT authentication and security
-- ✅ Prisma ORM and database management
-- ✅ TypeScript for type-safe development
-- ✅ Monorepo architecture with npm workspaces
-- ✅ Testing with Jest and Supertest
-- ✅ Git workflow and version control
-- ✅ Code quality tools (ESLint, Prettier, Husky)
-- ✅ Professional documentation practices
 
 ---
 
@@ -1200,12 +1166,8 @@ By studying this project, you'll learn:
 
 ---
 
-**Built with ❤️ for IN3210 Mobile Applications Development**
-
-**Submission Date**: November 23, 2025  
-**Status**: ✅ Complete - Ready for Submission  
-**Score**: 125/125 (100 base + 25 bonus)
+**Built with ❤️ by the StreamBox Team**
 
 ---
 
-**Last Updated**: November 22, 2025
+**Last Updated**: November 2025
