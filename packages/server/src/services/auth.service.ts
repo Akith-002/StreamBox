@@ -6,6 +6,17 @@ import { RegisterDto, LoginDto, AuthResponse } from "@streambox/shared";
 
 export class AuthService {
   async register(data: RegisterDto): Promise<AuthResponse> {
+    // Validate required fields
+    if (!data.email || !data.password || !data.firstName || !data.lastName) {
+      throw new AppError(400, "All fields are required");
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.email)) {
+      throw new AppError(400, "Invalid email format");
+    }
+
     // Check if user exists by email
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email },
@@ -45,6 +56,11 @@ export class AuthService {
   }
 
   async login(data: LoginDto): Promise<AuthResponse> {
+    // Validate required fields
+    if (!data.username || !data.password) {
+      throw new AppError(400, "Username and password are required");
+    }
+
     // Find user by email (username field contains email)
     const user = await prisma.user.findUnique({
       where: { email: data.username },

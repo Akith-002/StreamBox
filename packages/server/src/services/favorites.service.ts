@@ -26,6 +26,11 @@ export class FavoritesService {
     userId: string,
     data: AddFavoriteDto
   ): Promise<FavoriteDto> {
+    // Validate required fields
+    if (!data.tmdbId || !data.title || !data.posterPath) {
+      throw new AppError(400, "tmdbId, title, and posterPath are required");
+    }
+
     const mediaType = data.mediaType || "movie";
 
     // Check if already exists

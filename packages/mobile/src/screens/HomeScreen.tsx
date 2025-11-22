@@ -12,6 +12,7 @@ import {
   Animated,
   Image,
   StatusBar,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -20,13 +21,13 @@ import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../hooks/useTheme";
 import {
   useGetTrendingMoviesQuery,
-  useGetTrendingTVQuery,
+  useGetPopularMoviesQuery,
   useGetTopRatedMoviesQuery,
-  useGetPopularTVQuery,
-} from "../api/tmdbApi";
+} from "../api/backendApi";
 import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
 import { Movie, TVShow, MediaItem, isMovie, isTVShow } from "../types/Movie";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
+import SkeletonLoader from "../components/SkeletonLoader";
 
 const HERO_ROTATION_INTERVAL = 5000;
 const screenWidth = Dimensions.get("window").width;
@@ -36,33 +37,113 @@ export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
 
-  // API Hooks (Same as before)
-  const { data: trendingMoviesData, isLoading: loadingMovies } =
-    useGetTrendingMoviesQuery("week");
-  const { data: trendingTVData, isLoading: loadingTV } =
-    useGetTrendingTVQuery("week");
-  const { data: topRatedMoviesData, isLoading: loadingTopRated } =
-    useGetTopRatedMoviesQuery(1);
-  const { data: popularTVData, isLoading: loadingPopularTV } =
-    useGetPopularTVQuery(1);
+  // Pagination state
+  const [trendingPage, setTrendingPage] = useState(1);
+  const [popularPage, setPopularPage] = useState(1);
+  const [topRatedPage, setTopRatedPage] = useState(1);
 
-  const isLoading =
-    loadingMovies || loadingTV || loadingTopRated || loadingPopularTV;
+  // API Hooks with refetch capability and pagination
+  const {
+    data: trendingMoviesData,
+    isLoading: loadingMovies,
+    isFetching: fetchingTrending,
+    refetch: refetchMovies,
+  } = useGetTrendingMoviesQuery(trendingPage);
+
+  const {
+    data: popularMoviesData,
+    isLoading: loadingPopular,
+    isFetching: fetchingPopular,
+    refetch: refetchPopular,
+  } = useGetPopularMoviesQuery(popularPage);
+
+  const {
+    data: topRatedMoviesData,
+    isLoading: loadingTopRated,
+    isFetching: fetchingTopRated,
+    refetch: refetchTopRated,
+  } = useGetTopRatedMoviesQuery(topRatedPage);
+
+  const isLoading = loadingMovies || loadingPopular || loadingTopRated;
+
+  const [refreshing, setRefreshing] = useState(false);
 
   const [heroIndex, setHeroIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current; // Start at 1
 
-  const trendingMovies = (trendingMoviesData?.results ?? []) as Movie[];
-  const trendingTV = (trendingTVData?.results ?? []) as TVShow[];
-  const topRatedMovies = (topRatedMoviesData?.results ?? []) as Movie[];
-  const popularTV = (popularTVData?.results ?? []) as TVShow[];
+  // Accumulated results for infinite scroll
+  const [allTrendingMovies, setAllTrendingMovies] = useState<Movie[]>([]);
+  const [allPopularMovies, setAllPopularMovies] = useState<Movie[]>([]);
+  const [allTopRatedMovies, setAllTopRatedMovies] = useState<Movie[]>([]);
 
-  // Filter and Setup Hero Items
-  const heroItems = [...trendingMovies.slice(0, 3), ...trendingTV.slice(0, 2)]
-    .filter((item): item is Movie | TVShow => isMovie(item) || isTVShow(item))
+  // Update accumulated results when new data arrives
+  useEffect(() => {
+    if (trendingMoviesData?.results) {
+      setAllTrendingMovies((prev) => {
+        const newMovies = trendingMoviesData.results as Movie[];
+        if (trendingPage === 1) return newMovies;
+        const existingIds = new Set(prev.map((m) => m.id));
+        const uniqueNew = newMovies.filter((m) => !existingIds.has(m.id));
+        return [...prev, ...uniqueNew];
+      });
+    }
+  }, [trendingMoviesData, trendingPage]);
+
+  useEffect(() => {
+    if (popularMoviesData?.results) {
+      setAllPopularMovies((prev) => {
+        const newMovies = popularMoviesData.results as Movie[];
+        if (popularPage === 1) return newMovies;
+        const existingIds = new Set(prev.map((m) => m.id));
+        const uniqueNew = newMovies.filter((m) => !existingIds.has(m.id));
+        return [...prev, ...uniqueNew];
+      });
+    }
+  }, [popularMoviesData, popularPage]);
+
+  useEffect(() => {
+    if (topRatedMoviesData?.results) {
+      setAllTopRatedMovies((prev) => {
+        const newMovies = topRatedMoviesData.results as Movie[];
+        if (topRatedPage === 1) return newMovies;
+        const existingIds = new Set(prev.map((m) => m.id));
+        const uniqueNew = newMovies.filter((m) => !existingIds.has(m.id));
+        return [...prev, ...uniqueNew];
+      });
+    }
+  }, [topRatedMoviesData, topRatedPage]);
+
+  const trendingMovies = allTrendingMovies;
+  const popularMovies = allPopularMovies;
+  const topRatedMovies = allTopRatedMovies;
+
+  // Filter and Setup Hero Items (use first page only)
+  const heroItems = [...trendingMovies.slice(0, 5)]
+    .filter((item): item is Movie => isMovie(item))
     .slice(0, 5);
 
   const currentHero = heroItems[heroIndex];
+
+  // Pull to Refresh Handler
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      // Reset pages to 1
+      setTrendingPage(1);
+      setPopularPage(1);
+      setTopRatedPage(1);
+      // Clear accumulated data
+      setAllTrendingMovies([]);
+      setAllPopularMovies([]);
+      setAllTopRatedMovies([]);
+      // Refetch
+      await Promise.all([refetchMovies(), refetchPopular(), refetchTopRated()]);
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Carousel Logic
   useEffect(() => {
@@ -99,19 +180,13 @@ export default function HomeScreen() {
   const HeroSection = () => {
     if (!currentHero) return null;
 
-    const title = isMovie(currentHero)
-      ? currentHero.title
-      : isTVShow(currentHero)
-      ? currentHero.name
-      : "";
+    const title = currentHero.title || "";
     const imageUri = currentHero.poster_path
       ? `${TMDB_IMAGE_BASE_URL}${currentHero.poster_path}`
       : null;
 
     // Get genres or date for meta info
-    const metaText = isMovie(currentHero)
-      ? currentHero.release_date?.slice(0, 4) || "Movie"
-      : currentHero.first_air_date?.slice(0, 4) || "TV Show";
+    const metaText = currentHero.release_date?.slice(0, 4) || "Movie";
 
     return (
       <View style={styles.heroContainer}>
@@ -231,7 +306,7 @@ export default function HomeScreen() {
   if (isLoading && !trendingMovies.length) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <SkeletonLoader count={6} />
       </View>
     );
   }
@@ -247,7 +322,17 @@ export default function HomeScreen() {
         backgroundColor="transparent"
       />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+      >
         <HeroSection />
 
         <View style={styles.contentContainer}>
@@ -260,17 +345,55 @@ export default function HomeScreen() {
             renderItem={renderMediaCard}
             contentContainerStyle={styles.listContent}
             keyExtractor={(item) => `tm-${item.id}`}
+            onEndReached={() => {
+              if (
+                trendingMoviesData &&
+                trendingPage < trendingMoviesData.total_pages &&
+                !fetchingTrending
+              ) {
+                setTrendingPage((prev) => prev + 1);
+              }
+            }}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              fetchingTrending ? (
+                <ActivityIndicator
+                  size="small"
+                  color={colors.primary}
+                  style={{ marginLeft: 16 }}
+                />
+              ) : null
+            }
           />
 
-          {/* Trending TV */}
-          <SectionHeader title="Popular TV Shows" />
+          {/* Popular Movies */}
+          <SectionHeader title="Popular Movies" />
           <FlatList
-            data={trendingTV}
+            data={popularMovies}
             horizontal
             showsHorizontalScrollIndicator={false}
             renderItem={renderMediaCard}
             contentContainerStyle={styles.listContent}
-            keyExtractor={(item) => `tt-${item.id}`}
+            keyExtractor={(item) => `pm-${item.id}`}
+            onEndReached={() => {
+              if (
+                popularMoviesData &&
+                popularPage < popularMoviesData.total_pages &&
+                !fetchingPopular
+              ) {
+                setPopularPage((prev) => prev + 1);
+              }
+            }}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              fetchingPopular ? (
+                <ActivityIndicator
+                  size="small"
+                  color={colors.primary}
+                  style={{ marginLeft: 16 }}
+                />
+              ) : null
+            }
           />
 
           {/* Top Rated */}
@@ -282,17 +405,55 @@ export default function HomeScreen() {
             renderItem={renderMediaCard}
             contentContainerStyle={styles.listContent}
             keyExtractor={(item) => `tr-${item.id}`}
+            onEndReached={() => {
+              if (
+                topRatedMoviesData &&
+                topRatedPage < topRatedMoviesData.total_pages &&
+                !fetchingTopRated
+              ) {
+                setTopRatedPage((prev) => prev + 1);
+              }
+            }}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              fetchingTopRated ? (
+                <ActivityIndicator
+                  size="small"
+                  color={colors.primary}
+                  style={{ marginLeft: 16 }}
+                />
+              ) : null
+            }
           />
 
-          {/* Popular TV */}
-          <SectionHeader title="Binge-Worthy TV" />
+          {/* Trending Movies with Infinite Scroll */}
+          <SectionHeader title="Trending Now" />
           <FlatList
-            data={popularTV}
+            data={trendingMovies}
             horizontal
             showsHorizontalScrollIndicator={false}
             renderItem={renderMediaCard}
             contentContainerStyle={styles.listContent}
-            keyExtractor={(item) => `pt-${item.id}`}
+            keyExtractor={(item) => `trend-${item.id}`}
+            onEndReached={() => {
+              if (
+                trendingMoviesData &&
+                trendingPage < trendingMoviesData.total_pages &&
+                !fetchingTrending
+              ) {
+                setTrendingPage((prev) => prev + 1);
+              }
+            }}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              fetchingTrending ? (
+                <ActivityIndicator
+                  size="small"
+                  color={colors.primary}
+                  style={{ marginLeft: 16 }}
+                />
+              ) : null
+            }
           />
         </View>
 

@@ -31,6 +31,8 @@ export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [allResults, setAllResults] = useState<MovieDto[]>([]);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
@@ -38,11 +40,25 @@ export default function SearchScreen() {
     isLoading,
     isFetching,
   } = useSearchMoviesQuery(
-    { query: debouncedQuery, page: 1 },
+    { query: debouncedQuery, page: currentPage },
     { skip: !debouncedQuery || debouncedQuery.length < 2 }
   );
 
-  const searchResults = searchData?.results || [];
+  // Update accumulated results when new data arrives
+  useEffect(() => {
+    if (searchData?.results) {
+      setAllResults((prev) => {
+        if (currentPage === 1) return searchData.results as MovieDto[];
+        const existingIds = new Set(prev.map((m) => m.id));
+        const uniqueNew = (searchData.results as MovieDto[]).filter(
+          (m) => !existingIds.has(m.id)
+        );
+        return [...prev, ...uniqueNew];
+      });
+    }
+  }, [searchData, currentPage]);
+
+  const searchResults = allResults;
 
   // Load search history on mount
   useEffect(() => {
@@ -107,9 +123,14 @@ export default function SearchScreen() {
     async (query: string, addToHistory = true) => {
       if (query.trim().length < 2) {
         setDebouncedQuery("");
+        setAllResults([]);
+        setCurrentPage(1);
         return;
       }
       try {
+        // Reset for new search
+        setCurrentPage(1);
+        setAllResults([]);
         setDebouncedQuery(query);
         if (addToHistory) {
           await saveToHistory(query);
@@ -291,6 +312,25 @@ export default function SearchScreen() {
             contentContainerStyle={styles.resultsList}
             showsVerticalScrollIndicator={false}
             keyboardDismissMode="on-drag"
+            onEndReached={() => {
+              if (
+                searchData &&
+                currentPage < searchData.total_pages &&
+                !isFetching
+              ) {
+                setCurrentPage((prev) => prev + 1);
+              }
+            }}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              isFetching && currentPage > 1 ? (
+                <ActivityIndicator
+                  size="small"
+                  color={colors.primary}
+                  style={{ marginVertical: 16 }}
+                />
+              ) : null
+            }
           />
         ) : debouncedQuery && searchQuery.length >= 2 ? (
           <View style={styles.centered}>

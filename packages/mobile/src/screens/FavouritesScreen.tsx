@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,8 @@ import {
   Dimensions,
   Image,
   Animated,
-  StatusBar,
+  TextInput,
+  Keyboard,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -25,18 +26,58 @@ import { TMDB_IMAGE_BASE_URL } from "../constants/config";
 const screenWidth = Dimensions.get("window").width;
 const cardWidth = (screenWidth - spacing.lg * 3) / 2;
 
+// Sort Options
+type SortType = "date" | "rating" | "name";
+type FilterType = "all" | "movie" | "tv";
+
 export default function FavouritesScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
   const { data: favorites, isLoading } = useGetFavoritesQuery();
   const [removeFavorite] = useRemoveFavoriteMutation();
+
+  // UI States
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+  const [sortBy, setSortBy] = useState<SortType>("date");
+  const [showSearch, setShowSearch] = useState(false);
 
-  // Ensure we have a valid array
-  const favouritesList = Array.isArray(favorites) ? favorites : [];
+  // --- DATA PROCESSING ---
+  const processedList = useMemo(() => {
+    if (!Array.isArray(favorites)) return [];
 
-  // Animation ref for the list
-  const scrollY = new Animated.Value(0);
+    let result = [...favorites];
+
+    // 1. Filter by Category (Movie/TV)
+    if (activeFilter !== "all") {
+      result = result.filter(
+        (item) => (item.mediaType || "movie") === activeFilter
+      );
+    }
+
+    // 2. Filter by Search
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((item) =>
+        item.title?.toLowerCase().includes(query)
+      );
+    }
+
+    // 3. Sort
+    result.sort((a, b) => {
+      if (sortBy === "rating") {
+        return (b.voteAverage || 0) - (a.voteAverage || 0);
+      }
+      if (sortBy === "name") {
+        return (a.title || "").localeCompare(b.title || "");
+      }
+      // Default: Date (assuming API returns newest first, or we keep order)
+      return 0;
+    });
+
+    return result;
+  }, [favorites, activeFilter, searchQuery, sortBy]);
 
   const handleItemPress = (item: any) => {
     const mediaType = item.mediaType || "movie";
@@ -63,7 +104,6 @@ export default function FavouritesScreen() {
       await removeFavorite({ tmdbId, mediaType }).unwrap();
     } catch (error) {
       console.error("Failed to remove favorite:", error);
-      // Remove from deleting state on error so item reappears
       setDeletingIds((prev) => {
         const next = new Set(prev);
         next.delete(tmdbId);
@@ -72,19 +112,14 @@ export default function FavouritesScreen() {
     }
   };
 
-  const renderFavouriteCard = ({
-    item,
-    index,
-  }: {
-    item: any;
-    index: number;
-  }) => {
+  // --- RENDER HELPERS ---
+
+  const renderFavouriteCard = ({ item }: { item: any }) => {
     const posterUri = item.posterPath
       ? `${TMDB_IMAGE_BASE_URL}${item.posterPath}`
       : undefined;
 
     const isDeleting = deletingIds.has(item.tmdbId);
-
     const title = item.title || "";
     const year = item.releaseDate ? item.releaseDate.slice(0, 4) : "N/A";
     const rating = item.voteAverage ? item.voteAverage.toFixed(1) : "N/A";
@@ -104,7 +139,6 @@ export default function FavouritesScreen() {
           onPress={() => handleItemPress(item)}
           style={styles.cardContainer}
         >
-          {/* Image Container */}
           <View
             style={[styles.posterContainer, { backgroundColor: colors.card }]}
           >
@@ -115,54 +149,39 @@ export default function FavouritesScreen() {
                 <Feather name="image" size={24} color={colors.textLight} />
               </View>
             )}
-
-            {/* Gradient Overlay for Text Readability */}
             <LinearGradient
               colors={["transparent", "rgba(0,0,0,0.8)"]}
               style={styles.gradientOverlay}
             />
-
-            {/* Top Right: Glassmorphism Remove Button */}
             <TouchableOpacity
               style={styles.removeButton}
               onPress={() => handleRemove(item)}
               activeOpacity={0.6}
             >
               <View style={styles.glassCircle}>
-                <Feather name="x" size={16} color="#FFF" />
+                <Feather name="x" size={14} color="#FFF" />
               </View>
             </TouchableOpacity>
-
-            {/* Top Left: Media Type Tag */}
             <View style={styles.mediaTag}>
               <Text style={styles.mediaTagText}>
                 {(item.mediaType || "movie").toUpperCase() === "TV"
-                  ? "TV SHOW"
+                  ? "TV"
                   : "MOVIE"}
               </Text>
             </View>
           </View>
-
-          {/* Minimal Info Section */}
           <View style={styles.infoContainer}>
-            <View style={styles.titleRow}>
-              <Text
-                style={[styles.title, { color: colors.text }]}
-                numberOfLines={1}
-              >
-                {title}
-              </Text>
-            </View>
-
+            <Text
+              style={[styles.title, { color: colors.text }]}
+              numberOfLines={1}
+            >
+              {title}
+            </Text>
             <View style={styles.metaRow}>
-              <View style={styles.ratingContainer}>
-                <Feather name="star" size={12} color={colors.primary} />
-                <Text
-                  style={[styles.metaText, { color: colors.textSecondary }]}
-                >
-                  {rating}
-                </Text>
-              </View>
+              <Feather name="star" size={10} color={colors.primary} />
+              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                {rating}
+              </Text>
               <Text style={[styles.metaText, { color: colors.textSecondary }]}>
                 •
               </Text>
@@ -176,38 +195,143 @@ export default function FavouritesScreen() {
     );
   };
 
+  const FilterPill = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value: FilterType;
+  }) => (
+    <TouchableOpacity
+      style={[
+        styles.pill,
+        {
+          backgroundColor:
+            activeFilter === value ? colors.primary : colors.card,
+          borderWidth: activeFilter === value ? 0 : 1,
+          borderColor: colors.border,
+        },
+      ]}
+      onPress={() => setActiveFilter(value)}
+    >
+      <Text
+        style={[
+          styles.pillText,
+          { color: activeFilter === value ? "#FFF" : colors.textSecondary },
+        ]}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+
   const ListHeader = () => (
-    <View style={styles.headerContainer}>
-      <View>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          My List
-        </Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          {favouritesList.length}{" "}
-          {favouritesList.length === 1 ? "Title" : "Titles"} Saved
-        </Text>
+    <View style={styles.headerSection}>
+      {/* Title & Search Toggle */}
+      <View style={styles.topRow}>
+        <View>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            My List
+          </Text>
+          <Text
+            style={[styles.headerSubtitle, { color: colors.textSecondary }]}
+          >
+            {processedList.length} Titles Saved
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={[styles.iconButton, { backgroundColor: colors.card }]}
+          onPress={() => {
+            setShowSearch(!showSearch);
+            if (showSearch) {
+              setSearchQuery("");
+              Keyboard.dismiss();
+            }
+          }}
+        >
+          <Feather
+            name={showSearch ? "x" : "search"}
+            size={20}
+            color={colors.text}
+          />
+        </TouchableOpacity>
       </View>
-      {/* Optional: Add a Filter icon here if needed later */}
+
+      {/* Expandable Search Bar */}
+      {showSearch && (
+        <View style={[styles.searchBar, { backgroundColor: colors.card }]}>
+          <Feather name="search" size={18} color={colors.textLight} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Find in library..."
+            placeholderTextColor={colors.textLight}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoFocus
+          />
+        </View>
+      )}
+
+      {/* Filter & Sort Row */}
+      <View style={styles.controlsRow}>
+        <View style={styles.pillsRow}>
+          <FilterPill label="All" value="all" />
+          <FilterPill label="Movies" value="movie" />
+          <FilterPill label="TV Shows" value="tv" />
+        </View>
+
+        <TouchableOpacity
+          style={styles.sortButton}
+          onPress={() => {
+            // Cycle sort: Date -> Rating -> Name -> Date
+            if (sortBy === "date") setSortBy("rating");
+            else if (sortBy === "rating") setSortBy("name");
+            else setSortBy("date");
+          }}
+        >
+          <Text style={[styles.sortText, { color: colors.textSecondary }]}>
+            {sortBy === "date"
+              ? "Recent"
+              : sortBy === "rating"
+              ? "Rating"
+              : "A-Z"}
+          </Text>
+          <Feather
+            name="bar-chart-2"
+            size={16}
+            color={colors.textSecondary}
+            style={{ transform: [{ rotate: "90deg" }] }}
+          />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
   const EmptyState = () => (
     <View style={styles.emptyContainer}>
       <View style={[styles.emptyIconCircle, { backgroundColor: colors.card }]}>
-        <Feather name="heart" size={40} color={colors.textLight} />
+        <Feather
+          name={searchQuery ? "search" : "heart"}
+          size={40}
+          color={colors.textLight}
+        />
       </View>
       <Text style={[styles.emptyTitle, { color: colors.text }]}>
-        Your list is empty
+        {searchQuery ? "No matches found" : "Your list is empty"}
       </Text>
       <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-        Content you add to your favorites will appear here.
+        {searchQuery
+          ? "Try adjusting your filters or search query."
+          : "Content you add to your favorites will appear here."}
       </Text>
-      <TouchableOpacity
-        style={[styles.browseButton, { backgroundColor: colors.primary }]}
-        onPress={() => navigation.navigate("HomeTab")}
-      >
-        <Text style={styles.browseButtonText}>Explore Content</Text>
-      </TouchableOpacity>
+      {!searchQuery && (
+        <TouchableOpacity
+          style={[styles.browseButton, { backgroundColor: colors.primary }]}
+          onPress={() => navigation.navigate("HomeTab")}
+        >
+          <Text style={styles.browseButtonText}>Explore Content</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -217,7 +341,7 @@ export default function FavouritesScreen() {
       edges={["top"]}
     >
       <FlatList
-        data={favouritesList}
+        data={processedList}
         keyExtractor={(item) => item.tmdbId.toString()}
         renderItem={renderFavouriteCard}
         numColumns={2}
@@ -226,6 +350,7 @@ export default function FavouritesScreen() {
         ListHeaderComponent={ListHeader}
         ListEmptyComponent={EmptyState}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       />
     </SafeAreaView>
   );
@@ -239,12 +364,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl * 2,
   },
-  headerContainer: {
-    marginTop: spacing.lg,
-    marginBottom: spacing.xl,
+
+  // Header Section Styles
+  headerSection: {
+    marginBottom: spacing.lg,
+    marginTop: spacing.sm,
+  },
+  topRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: spacing.md,
   },
   headerTitle: {
     fontSize: 28,
@@ -254,10 +384,64 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: fontSizes.md,
     fontWeight: "500",
-    marginTop: 4,
+    marginTop: 2,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    ...shadows.small,
   },
 
-  // Card Styles
+  // Search Bar
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    height: 44,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.md,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: fontSizes.md,
+    height: "100%",
+  },
+
+  // Controls (Filter pills + Sort)
+  controlsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  pillsRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  pill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  pillText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  sortButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 6,
+  },
+  sortText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  // Grid Items
   columnWrapper: {
     justifyContent: "space-between",
     marginBottom: spacing.lg,
@@ -266,7 +450,7 @@ const styles = StyleSheet.create({
     width: cardWidth,
   },
   cardContainer: {
-    gap: 8,
+    gap: 6,
   },
   posterContainer: {
     width: "100%",
@@ -294,64 +478,55 @@ const styles = StyleSheet.create({
     height: "40%",
   },
 
-  // Floating UI Elements on Poster
+  // Card UI Elements
   removeButton: {
     position: "absolute",
-    top: 8,
-    right: 8,
+    top: 6,
+    right: 6,
     zIndex: 10,
+    padding: 4, // Increase touch area
   },
   glassCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    // REMOVED: backdropFilter (not supported in React Native styles)
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(255,255,255,0.2)",
   },
   mediaTag: {
     position: "absolute",
     top: 8,
     left: 8,
     backgroundColor: "rgba(0,0,0,0.6)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
     borderRadius: 4,
   },
   mediaTagText: {
     color: "#FFF",
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "800",
-    letterSpacing: 0.5,
   },
 
-  // Info Styles
+  // Info Section
   infoContainer: {
-    paddingHorizontal: 4,
-  },
-  titleRow: {
-    marginBottom: 2,
+    paddingHorizontal: 2,
   },
   title: {
-    fontSize: fontSizes.md,
+    fontSize: fontSizes.sm,
     fontWeight: "600",
-    lineHeight: 20,
+    marginBottom: 2,
   },
   metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  ratingContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
   },
   metaText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "500",
   },
 
@@ -359,7 +534,7 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 100,
+    marginTop: 80,
     paddingHorizontal: spacing.xl,
   },
   emptyIconCircle: {
@@ -374,6 +549,7 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.xl,
     fontWeight: "700",
     marginBottom: spacing.sm,
+    textAlign: "center",
   },
   emptySubtitle: {
     fontSize: fontSizes.md,
@@ -384,7 +560,6 @@ const styles = StyleSheet.create({
   browseButton: {
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
-    // FIXED: changed .full to .round (or just use a number like 30)
     borderRadius: borderRadius.round,
     ...shadows.medium,
   },
