@@ -10,9 +10,9 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useGetTrendingMoviesQuery } from "../api/tmdbApi";
+import { useTheme } from "../hooks/useTheme";
 import MovieCard from "../components/MovieCard";
 import {
-  lightColors,
   spacing,
   fontSizes,
   borderRadius,
@@ -21,6 +21,7 @@ import { Movie } from "../types/Movie";
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
   const { data, error, isLoading, refetch } =
     useGetTrendingMoviesQuery(undefined);
 
@@ -32,32 +33,47 @@ export default function HomeScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={lightColors.primary} />
-        <Text style={styles.loadingText}>Fetching trending movies…</Text>
+      <View
+        style={[styles.centered, { backgroundColor: colors.background }]}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+          Fetching trending movies…
+        </Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.centered}>
-        <Feather name="alert-triangle" size={48} color={lightColors.error} />
-        <Text style={styles.loadingText}>
+      <View
+        style={[styles.centered, { backgroundColor: colors.background }]}
+      >
+        <Feather name="alert-triangle" size={48} color={colors.error} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
           Unable to load movies. Check your connection.
         </Text>
-        <TouchableOpacity onPress={() => refetch()} style={styles.retryButton}>
-          <Text style={styles.retryText}>Try again</Text>
+        <TouchableOpacity
+          onPress={() => refetch()}
+          style={[styles.retryButton, { backgroundColor: colors.primary }]}
+        >
+          <Text style={[styles.retryText, { color: colors.card }]}>
+            Try again
+          </Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Trending This Week</Text>
-        <Text style={styles.subtitle}>Fresh picks from TMDB</Text>
+        <Text style={[styles.title, { color: colors.text }]}>
+          Trending This Week
+        </Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          Fresh picks from TMDB
+        </Text>
       </View>
       <FlatList
         data={trendingMovies}
@@ -68,8 +84,8 @@ export default function HomeScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Feather name="frown" size={36} color={lightColors.textLight} />
-            <Text style={styles.emptyText}>
+            <Feather name="frown" size={36} color={colors.textLight} />
+            <Text style={[styles.emptyText, { color: colors.textLight }]}>
               No trending movies found right now.
             </Text>
           </View>
@@ -82,7 +98,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: lightColors.background,
   },
   header: {
     paddingHorizontal: spacing.lg,
@@ -92,11 +107,9 @@ const styles = StyleSheet.create({
   title: {
     fontSize: fontSizes.xxl,
     fontWeight: "bold" as "bold",
-    color: lightColors.text,
   },
   subtitle: {
     fontSize: fontSizes.md,
-    color: lightColors.textSecondary,
     marginTop: spacing.xs,
   },
   listContent: {
@@ -112,17 +125,14 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: spacing.sm,
     fontSize: fontSizes.md,
-    color: lightColors.textSecondary,
   },
   retryButton: {
     marginTop: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.md,
-    backgroundColor: lightColors.primary,
   },
   retryText: {
-    color: lightColors.card,
     fontWeight: "600",
   },
   emptyState: {
@@ -132,7 +142,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     marginTop: spacing.sm,
-    color: lightColors.textLight,
     fontSize: fontSizes.md,
   },
 });

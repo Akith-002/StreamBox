@@ -13,16 +13,18 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { tmdbApi } from "../api/tmdbApi";
 import authReducer from "./features/authSlice";
 import favouritesReducer from "./features/favouritesSlice";
+import uiReducer from "./features/uiSlice";
 
 const persistConfig = {
   key: "root",
   storage: AsyncStorage,
-  whitelist: ["auth", "favourites"],
+  whitelist: ["auth", "favourites", "ui"],
 };
 
 const rootReducer = combineReducers({
   auth: authReducer,
   favourites: favouritesReducer,
+  ui: uiReducer,
   [tmdbApi.reducerPath]: tmdbApi.reducer,
 });
 

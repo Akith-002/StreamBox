@@ -1,12 +1,21 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, Image } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  Switch,
+  TouchableOpacity,
+} from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { Feather } from "@expo/vector-icons";
 import { logOut } from "../store/features/authSlice";
+import { toggleTheme } from "../store/features/uiSlice";
+import { useTheme } from "../hooks/useTheme";
 import { RootState } from "../store/store";
 import Button from "../components/Button";
 import {
-  lightColors,
   spacing,
   fontSizes,
   borderRadius,
@@ -15,14 +24,21 @@ import {
 
 export default function ProfileScreen() {
   const dispatch = useDispatch();
+  const { colors, theme } = useTheme();
   const user = useSelector((state: RootState) => state.auth.user);
 
   const handleLogout = () => {
     dispatch(logOut());
   };
 
+  const handleThemeToggle = () => {
+    dispatch(toggleTheme());
+  };
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <View style={styles.content}>
         {/* Profile Header */}
         <View style={styles.header}>
@@ -30,62 +46,119 @@ export default function ProfileScreen() {
             {user?.image ? (
               <Image source={{ uri: user.image }} style={styles.avatar} />
             ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Feather name="user" size={48} color={lightColors.primary} />
+              <View
+                style={[
+                  styles.avatarPlaceholder,
+                  {
+                    backgroundColor: colors.backgroundSecondary,
+                    borderColor: colors.primary,
+                  },
+                ]}
+              >
+                <Feather
+                  name="user"
+                  size={48}
+                  color={colors.primary}
+                />
               </View>
             )}
           </View>
 
-          <Text style={styles.name}>
+          <Text style={[styles.name, { color: colors.text }]}>
             {user?.firstName} {user?.lastName}
           </Text>
-          <Text style={styles.username}>@{user?.username}</Text>
-          {user?.email && <Text style={styles.email}>{user.email}</Text>}
+          <Text style={[styles.username, { color: colors.textSecondary }]}>
+            @{user?.username}
+          </Text>
+          {user?.email && (
+            <Text style={[styles.email, { color: colors.textLight }]}>
+              {user.email}
+            </Text>
+          )}
         </View>
 
         {/* Profile Info Cards */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Information</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Account Information
+          </Text>
 
-          <View style={styles.card}>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
             <View style={styles.infoRow}>
-              <View style={styles.infoIconContainer}>
-                <Feather name="user" size={20} color={lightColors.primary} />
+              <View
+                style={[
+                  styles.infoIconContainer,
+                  { backgroundColor: colors.primary + "20" },
+                ]}
+              >
+                <Feather name="user" size={20} color={colors.primary} />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Full Name</Text>
-                <Text style={styles.infoValue}>
+                <Text
+                  style={[styles.infoLabel, { color: colors.textSecondary }]}
+                >
+                  Full Name
+                </Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>
                   {user?.firstName} {user?.lastName}
                 </Text>
               </View>
             </View>
 
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
             <View style={styles.infoRow}>
-              <View style={styles.infoIconContainer}>
-                <Feather name="at-sign" size={20} color={lightColors.primary} />
+              <View
+                style={[
+                  styles.infoIconContainer,
+                  { backgroundColor: colors.primary + "20" },
+                ]}
+              >
+                <Feather name="at-sign" size={20} color={colors.primary} />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Username</Text>
-                <Text style={styles.infoValue}>{user?.username}</Text>
+                <Text
+                  style={[styles.infoLabel, { color: colors.textSecondary }]}
+                >
+                  Username
+                </Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>
+                  {user?.username}
+                </Text>
               </View>
             </View>
 
             {user?.email && (
               <>
-                <View style={styles.divider} />
+                <View
+                  style={[styles.divider, { backgroundColor: colors.border }]}
+                />
                 <View style={styles.infoRow}>
-                  <View style={styles.infoIconContainer}>
-                    <Feather
-                      name="mail"
-                      size={20}
-                      color={lightColors.primary}
-                    />
+                  <View
+                    style={[
+                      styles.infoIconContainer,
+                      { backgroundColor: colors.primary + "20" },
+                    ]}
+                  >
+                    <Feather name="mail" size={20} color={colors.primary} />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Email</Text>
-                    <Text style={styles.infoValue}>{user.email}</Text>
+                    <Text
+                      style={[
+                        styles.infoLabel,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      Email
+                    </Text>
+                    <Text style={[styles.infoValue, { color: colors.text }]}>
+                      {user.email}
+                    </Text>
                   </View>
                 </View>
               </>
@@ -93,22 +166,80 @@ export default function ProfileScreen() {
 
             {user?.gender && (
               <>
-                <View style={styles.divider} />
+                <View
+                  style={[styles.divider, { backgroundColor: colors.border }]}
+                />
                 <View style={styles.infoRow}>
-                  <View style={styles.infoIconContainer}>
-                    <Feather
-                      name="info"
-                      size={20}
-                      color={lightColors.primary}
-                    />
+                  <View
+                    style={[
+                      styles.infoIconContainer,
+                      { backgroundColor: colors.primary + "20" },
+                    ]}
+                  >
+                    <Feather name="info" size={20} color={colors.primary} />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Gender</Text>
-                    <Text style={styles.infoValue}>{user.gender}</Text>
+                    <Text
+                      style={[
+                        styles.infoLabel,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      Gender
+                    </Text>
+                    <Text style={[styles.infoValue, { color: colors.text }]}>
+                      {user.gender}
+                    </Text>
                   </View>
                 </View>
               </>
             )}
+          </View>
+        </View>
+
+        {/* Theme Settings */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Appearance
+          </Text>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <View style={styles.themeRow}>
+              <View style={styles.themeContent}>
+                <Feather
+                  name={theme === "dark" ? "moon" : "sun"}
+                  size={20}
+                  color={colors.primary}
+                  style={styles.themeIcon}
+                />
+                <View style={styles.themeTextContent}>
+                  <Text
+                    style={[
+                      styles.infoLabel,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    Dark Mode
+                  </Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>
+                    {theme === "dark" ? "Enabled" : "Disabled"}
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={theme === "dark"}
+                onValueChange={handleThemeToggle}
+                trackColor={{
+                  false: colors.border,
+                  true: colors.primary,
+                }}
+                thumbColor={colors.card}
+              />
+            </View>
           </View>
         </View>
 
@@ -124,7 +255,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: lightColors.background,
   },
   content: {
     padding: spacing.lg,
@@ -141,47 +271,40 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     borderWidth: 3,
-    borderColor: lightColors.primary,
   },
   avatarPlaceholder: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: lightColors.backgroundSecondary,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 3,
-    borderColor: lightColors.primary,
   },
   name: {
     fontSize: fontSizes.xl,
-    fontWeight: "bold" as "bold",
-    color: lightColors.text,
+    fontWeight: "bold",
     marginBottom: spacing.xs,
   },
   username: {
     fontSize: fontSizes.md,
-    color: lightColors.textSecondary,
     marginBottom: spacing.xs,
   },
   email: {
     fontSize: fontSizes.sm,
-    color: lightColors.textLight,
   },
   section: {
     marginBottom: spacing.xl,
   },
   sectionTitle: {
     fontSize: fontSizes.lg,
-    fontWeight: "600" as "600",
-    color: lightColors.text,
+    fontWeight: "600",
     marginBottom: spacing.md,
   },
   card: {
-    backgroundColor: lightColors.card,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     ...shadows.small,
+    borderWidth: 1,
   },
   infoRow: {
     flexDirection: "row",
@@ -192,7 +315,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: borderRadius.md,
-    backgroundColor: lightColors.primary + "15",
     justifyContent: "center",
     alignItems: "center",
     marginRight: spacing.md,
@@ -202,17 +324,31 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: fontSizes.sm,
-    color: lightColors.textSecondary,
     marginBottom: 2,
   },
   infoValue: {
     fontSize: fontSizes.md,
-    color: lightColors.text,
-    fontWeight: "500" as "500",
+    fontWeight: "500",
   },
   divider: {
     height: 1,
-    backgroundColor: lightColors.border,
     marginVertical: spacing.xs,
+  },
+  themeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: spacing.sm,
+  },
+  themeContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  themeIcon: {
+    marginRight: spacing.md,
+  },
+  themeTextContent: {
+    flex: 1,
   },
 });
