@@ -6,7 +6,7 @@ import HomeScreen from "../screens/HomeScreen";
 import DetailsScreen from "../screens/DetailsScreen";
 import FavouritesScreen from "../screens/FavouritesScreen";
 import ProfileScreen from "../screens/ProfileScreen";
-import { lightColors } from "../constants/theme";
+import { useTheme } from "../hooks/useTheme";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -26,6 +26,8 @@ function HomeStack() {
 }
 
 export default function MainTabNavigator() {
+  const { colors } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -42,8 +44,17 @@ export default function MainTabNavigator() {
 
           return <Feather name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: lightColors.tabBarActive,
-        tabBarInactiveTintColor: lightColors.tabBarInactive,
+        tabBarActiveTintColor: colors.tabBarActive,
+        tabBarInactiveTintColor: colors.tabBarInactive,
+        tabBarStyle: {
+          backgroundColor: colors.tabBarBackground,
+          borderTopColor: colors.border,
+        },
+        headerStyle: {
+          backgroundColor: colors.card,
+          borderBottomColor: colors.border,
+        },
+        headerTintColor: colors.text,
         headerShown: true,
       })}
     >
