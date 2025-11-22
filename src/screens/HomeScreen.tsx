@@ -21,7 +21,8 @@ import { Movie } from "../types/Movie";
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
-  const { data, error, isLoading, refetch } = useGetTrendingMoviesQuery(undefined);
+  const { data, error, isLoading, refetch } =
+    useGetTrendingMoviesQuery(undefined);
 
   const trendingMovies = data?.results ?? [];
 
