@@ -12,7 +12,7 @@ const Logo: React.FC<LogoProps> = ({ size = 60, showText = true }) => {
     <View style={styles.container}>
       <Image
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        source={require("../../assets/Streambox logo.jpg")}
+        source={require("../../assets/Streambox logo.png")}
         style={{ width: size, height: size, borderRadius: size / 5 }}
         resizeMode="contain"
       />
