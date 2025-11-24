@@ -120,19 +120,10 @@ StreamBox is a full-stack movie browsing application demonstrating industry-stan
 - ✅ Error handling middleware
 - ✅ CORS and Helmet security
 
-#### 👤 Biometric Authentication
-
-- ✅ FaceID/TouchID support (Expo Local Authentication)
-- ✅ Auto-login on app launch
-- ✅ Toggle in profile settings
-- ✅ Hardware support detection
-- ✅ Fallback to password login
-
 #### ✨ Advanced UX
 
 - ✅ Shared element transitions (React Native Reanimated)
 - ✅ Skeleton loading placeholders
-- ✅ Infinite scroll with pagination
 - ✅ Pull-to-refresh functionality
 - ✅ Optimistic UI updates
 
