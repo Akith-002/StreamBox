@@ -33,7 +33,7 @@ type FilterType = "all" | "movie" | "tv";
 export default function FavouritesScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
-  const { data: favorites, isLoading } = useGetFavoritesQuery();
+  const { data: favorites } = useGetFavoritesQuery();
   const [removeFavorite] = useRemoveFavoriteMutation();
 
   // UI States
@@ -293,8 +293,8 @@ export default function FavouritesScreen() {
             {sortBy === "date"
               ? "Recent"
               : sortBy === "rating"
-              ? "Rating"
-              : "A-Z"}
+                ? "Rating"
+                : "A-Z"}
           </Text>
           <Feather
             name="bar-chart-2"

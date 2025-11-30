@@ -7,7 +7,6 @@ import {
   Image,
   ActivityIndicator,
   TouchableOpacity,
-  Dimensions,
   FlatList,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
@@ -21,8 +20,6 @@ import {
 import { useTheme } from "../hooks/useTheme";
 import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
-
-const screenWidth = Dimensions.get("window").width;
 
 export default function PersonDetailsScreen() {
   const route = useRoute<any>();

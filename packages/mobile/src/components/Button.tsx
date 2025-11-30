@@ -10,8 +10,6 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
-  lightColors,
-  darkColors,
   spacing,
   borderRadius,
   fontSizes,
@@ -134,7 +132,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: fontSizes.md,
-    fontWeight: "700" as "700",
+    fontWeight: "700" as const,
   },
   primaryText: {
     color: "#FFFFFF",

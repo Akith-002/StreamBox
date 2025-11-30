@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef } from "react";
 import {
   View,
   Text,
@@ -33,12 +33,11 @@ export default function TVDetailsScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
   const { tvId } = route.params;
-  const { data: show, isLoading, error } = useGetTVDetailsQuery(tvId);
+  const { data: show, isLoading } = useGetTVDetailsQuery(tvId);
   const { data: favorites } = useGetFavoritesQuery();
   const [addFavorite] = useAddFavoriteMutation();
   const [removeFavorite] = useRemoveFavoriteMutation();
 
-  const [isFavouriteAnimating, setIsFavouriteAnimating] = useState(false);
   const heartScale = useRef(new Animated.Value(1)).current;
 
   const isFavourite =
@@ -53,8 +52,6 @@ export default function TVDetailsScreen() {
   const handleFavouritePress = async () => {
     if (!show) return;
 
-    setIsFavouriteAnimating(true);
-
     Animated.sequence([
       Animated.timing(heartScale, {
         toValue: 1.3,
@@ -66,7 +63,7 @@ export default function TVDetailsScreen() {
         duration: 300,
         useNativeDriver: true,
       }),
-    ]).start(() => setIsFavouriteAnimating(false));
+    ]).start();
 
     try {
       if (isFavourite) {
@@ -83,7 +80,7 @@ export default function TVDetailsScreen() {
         }).unwrap();
         Alert.alert("Added", `${show.name} added to favorites`);
       }
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "Failed to update favorites. Please try again.");
     }
   };
@@ -99,7 +96,7 @@ export default function TVDetailsScreen() {
     );
   }
 
-  if (error || !show) {
+  if (!show) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <Feather name="alert-triangle" size={48} color={colors.error} />
@@ -327,7 +324,7 @@ export default function TVDetailsScreen() {
             </Text>
             {show.tagline ? (
               <Text style={[styles.tagline, { color: colors.textLight }]}>
-                "{show.tagline}"
+                {show.tagline}
               </Text>
             ) : null}
           </View>

@@ -23,7 +23,7 @@ export const authenticate = (
 
     req.userId = decoded.userId;
     next();
-  } catch (error) {
+  } catch {
     next(new AppError(401, "Invalid or expired token"));
   }
 };

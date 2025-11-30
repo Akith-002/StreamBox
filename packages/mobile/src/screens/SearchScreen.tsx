@@ -14,12 +14,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { useSearchMoviesQuery } from "../api/backendApi";
 import { MovieDto } from "@streambox/shared";
 import { useTheme } from "../hooks/useTheme";
-import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
+import { spacing, fontSizes } from "../constants/theme";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
 
 const SEARCH_HISTORY_KEY = "@streambox_search_history";

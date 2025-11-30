@@ -5,7 +5,6 @@ import {
   Text,
   StyleSheet,
   TextInputProps,
-  KeyboardTypeOptions,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTheme } from "../hooks/useTheme";
@@ -88,7 +87,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: fontSizes.sm,
-    fontWeight: "600" as "600",
+    fontWeight: "600" as const,
     marginBottom: spacing.sm,
   },
   inputContainer: {
