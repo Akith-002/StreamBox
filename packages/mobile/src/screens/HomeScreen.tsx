@@ -449,43 +449,7 @@ export default function HomeScreen() {
             }
           />
 
-          {/* Trending Movies with Infinite Scroll */}
-          <SectionHeader
-            title="Trending Now"
-            onSeeAll={() =>
-              navigation.navigate("HomeTab", {
-                screen: "AllItems",
-                params: { category: "trending", title: "Trending Now" },
-              })
-            }
-          />
-          <FlatList
-            data={trendingMovies}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            renderItem={renderMediaCard}
-            contentContainerStyle={styles.listContent}
-            keyExtractor={(item) => `trend-${item.id}`}
-            onEndReached={() => {
-              if (
-                trendingMoviesData &&
-                trendingPage < trendingMoviesData.total_pages &&
-                !fetchingTrending
-              ) {
-                setTrendingPage((prev) => prev + 1);
-              }
-            }}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={
-              fetchingTrending ? (
-                <ActivityIndicator
-                  size="small"
-                  color={colors.primary}
-                  style={{ marginLeft: 16 }}
-                />
-              ) : null
-            }
-          />
+          {/* Removed duplicate 'Trending Now' section — use Trending Movies and Trending carousel above */}
         </View>
 
         <View style={{ height: 100 }} />
