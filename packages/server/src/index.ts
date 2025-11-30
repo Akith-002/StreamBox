@@ -10,7 +10,8 @@ import { errorHandler } from "./middleware/errorHandler";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+// Ensure PORT is a number (process.env values are strings)
+const PORT: number = Number(process.env.PORT) || 3000;
 
 // Middleware
 app.use(helmet());
@@ -30,6 +31,8 @@ app.use("/api/favorites", favoritesRoutes);
 // Error handling
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+// Bind to 0.0.0.0 to allow connections from mobile devices on the same network
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
+  console.log(`📱 For mobile access, use: http://192.168.1.138:${PORT}`);
 });
