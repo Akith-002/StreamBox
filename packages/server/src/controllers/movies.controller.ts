@@ -24,6 +24,11 @@ export const getMovieDetails = async (
 ) => {
   try {
     const movieId = parseInt(req.params.id);
+
+    if (isNaN(movieId) || movieId <= 0) {
+      return res.status(400).json({ error: "Invalid movie ID" });
+    }
+
     const result = await tmdbService.getMovieDetails(movieId);
     res.json(result);
   } catch (error) {
