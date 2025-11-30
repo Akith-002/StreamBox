@@ -4,8 +4,8 @@ import { getToken } from "../utils/secureStorage";
 import type {
   LoginDto,
   RegisterDto,
+  UpdateUserDto,
   AuthResponse,
-  MovieDto,
   MovieDetailsDto,
   PaginatedMoviesResponse,
   FavoriteDto,
@@ -39,6 +39,14 @@ export const backendApi = createApi({
       query: (data) => ({
         url: "/auth/register",
         method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Auth"],
+    }),
+    updateUser: builder.mutation<{ user: any }, UpdateUserDto>({
+      query: (data) => ({
+        url: "/auth/update",
+        method: "PUT",
         body: data,
       }),
       invalidatesTags: ["Auth"],
@@ -124,6 +132,7 @@ export const backendApi = createApi({
 export const {
   useLoginMutation,
   useRegisterMutation,
+  useUpdateUserMutation,
   useGetTrendingMoviesQuery,
   useGetPopularMoviesQuery,
   useGetTopRatedMoviesQuery,

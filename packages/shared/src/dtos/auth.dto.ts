@@ -11,6 +11,12 @@ export interface RegisterDto {
   lastName: string;
 }
 
+export interface UpdateUserDto {
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
+}
+
 export interface AuthResponse {
   user: {
     id: number;

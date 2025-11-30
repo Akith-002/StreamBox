@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,22 +7,32 @@ import {
   Image,
   Switch,
   TouchableOpacity,
-  StatusBar,
+  Modal,
+  TextInput,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { logOut } from "../store/features/authSlice";
+import * as ImagePicker from "expo-image-picker";
+import { logOut, updateUser } from "../store/features/authSlice";
 import { toggleTheme } from "../store/features/uiSlice";
 import { useTheme } from "../hooks/useTheme";
 import { RootState } from "../store/store";
-import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
+import { spacing, fontSizes, borderRadius } from "../constants/theme";
+import { useUpdateUserMutation } from "../api/backendApi";
 
 export default function ProfileScreen() {
   const dispatch = useDispatch();
   const { colors, theme } = useTheme();
   const user = useSelector((state: RootState) => state.auth.user);
+  const [updateUserMutation] = useUpdateUserMutation();
+
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [editFirstName, setEditFirstName] = useState(user?.firstName || "");
+  const [editLastName, setEditLastName] = useState(user?.lastName || "");
+  const [editImage, setEditImage] = useState(user?.image || "");
 
   const handleLogout = () => {
     dispatch(logOut());
@@ -30,6 +40,53 @@ export default function ProfileScreen() {
 
   const handleThemeToggle = () => {
     dispatch(toggleTheme());
+  };
+
+  const handleEditProfile = () => {
+    setEditFirstName(user?.firstName || "");
+    setEditLastName(user?.lastName || "");
+    setEditImage(user?.image || "");
+    setIsEditModalVisible(true);
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      const result = await updateUserMutation({
+        firstName: editFirstName,
+        lastName: editLastName,
+        avatarUrl: editImage,
+      }).unwrap();
+      dispatch(updateUser(result.user));
+      setIsEditModalVisible(false);
+      Alert.alert("Success", "Profile updated successfully");
+    } catch {
+      Alert.alert("Error", "Failed to update profile");
+    }
+  };
+
+  const handleSelectImage = async () => {
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissionResult.granted === false) {
+      Alert.alert(
+        "Permission required",
+        "Permission to access camera roll is required!"
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+      base64: true,
+    });
+
+    if (!result.canceled) {
+      const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      setEditImage(base64);
+    }
   };
 
   // Reusable Settings Row Component
@@ -106,7 +163,10 @@ export default function ProfileScreen() {
           />
 
           <View style={styles.profileInfo}>
-            <View style={styles.avatarWrapper}>
+            <TouchableOpacity
+              style={styles.avatarWrapper}
+              onPress={handleEditProfile}
+            >
               {user?.image ? (
                 <Image source={{ uri: user.image }} style={styles.avatar} />
               ) : (
@@ -124,7 +184,7 @@ export default function ProfileScreen() {
               >
                 <Feather name="edit-2" size={12} color="#FFF" />
               </View>
-            </View>
+            </TouchableOpacity>
 
             <Text style={[styles.name, { color: colors.text }]}>
               {user?.firstName} {user?.lastName}
@@ -160,13 +220,9 @@ export default function ProfileScreen() {
             />
             <SettingItem
               icon="user"
-              label="Gender"
-              value={
-                user?.gender
-                  ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1)
-                  : ""
-              }
-              showChevron={false}
+              label="Name"
+              value={`${user?.firstName} ${user?.lastName}`}
+              onPress={handleEditProfile}
             />
           </View>
 
@@ -203,6 +259,107 @@ export default function ProfileScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Edit Profile Modal */}
+      <Modal
+        visible={isEditModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsEditModalVisible(false)}
+      >
+        <View
+          style={[styles.modalOverlay, { backgroundColor: "rgba(0,0,0,0.5)" }]}
+        >
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: colors.background },
+            ]}
+          >
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              Edit Profile
+            </Text>
+
+            <TouchableOpacity
+              style={styles.imagePicker}
+              onPress={handleSelectImage}
+            >
+              {editImage ? (
+                <Image source={{ uri: editImage }} style={styles.editAvatar} />
+              ) : (
+                <View
+                  style={[
+                    styles.editAvatarPlaceholder,
+                    { backgroundColor: colors.card },
+                  ]}
+                >
+                  <Feather name="camera" size={30} color={colors.primary} />
+                </View>
+              )}
+              <Text style={[styles.imagePickerText, { color: colors.primary }]}>
+                Change Photo
+              </Text>
+            </TouchableOpacity>
+
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.card,
+                  color: colors.text,
+                  borderColor: colors.border,
+                },
+              ]}
+              placeholder="First Name"
+              placeholderTextColor={colors.textSecondary}
+              value={editFirstName}
+              onChangeText={setEditFirstName}
+            />
+
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.card,
+                  color: colors.text,
+                  borderColor: colors.border,
+                },
+              ]}
+              placeholder="Last Name"
+              placeholderTextColor={colors.textSecondary}
+              value={editLastName}
+              onChangeText={setEditLastName}
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  styles.cancelButton,
+                  { borderColor: colors.error },
+                ]}
+                onPress={() => setIsEditModalVisible(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.error }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  styles.saveButton,
+                  { backgroundColor: colors.primary },
+                ]}
+                onPress={handleSaveProfile}
+              >
+                <Text style={[styles.modalButtonText, { color: "#FFF" }]}>
+                  Save
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -347,5 +504,76 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: spacing.lg,
     marginBottom: spacing.xl,
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "90%",
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: fontSizes.xl,
+    fontWeight: "bold",
+    marginBottom: spacing.lg,
+  },
+  imagePicker: {
+    alignItems: "center",
+    marginBottom: spacing.lg,
+  },
+  editAvatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: spacing.sm,
+  },
+  editAvatarPlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: spacing.sm,
+  },
+  imagePickerText: {
+    fontSize: fontSizes.md,
+    fontWeight: "600",
+  },
+  input: {
+    width: "100%",
+    height: 50,
+    borderWidth: 1,
+    borderRadius: borderRadius.lg,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    fontSize: fontSizes.md,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    marginTop: spacing.md,
+  },
+  modalButton: {
+    flex: 1,
+    height: 50,
+    borderRadius: borderRadius.lg,
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: spacing.sm,
+  },
+  cancelButton: {
+    borderWidth: 1,
+  },
+  saveButton: {},
+  modalButtonText: {
+    fontSize: fontSizes.md,
+    fontWeight: "600",
   },
 });

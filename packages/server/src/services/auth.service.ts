@@ -2,7 +2,12 @@ import prisma from "../config/database";
 import { hashPassword, verifyPassword } from "../utils/passwordHash";
 import { generateToken } from "../utils/jwt";
 import { AppError } from "../middleware/errorHandler";
-import { RegisterDto, LoginDto, AuthResponse } from "@streambox/shared";
+import {
+  RegisterDto,
+  LoginDto,
+  AuthResponse,
+  UpdateUserDto,
+} from "@streambox/shared";
 
 export class AuthService {
   async register(data: RegisterDto): Promise<AuthResponse> {
@@ -90,6 +95,31 @@ export class AuthService {
         image: user.avatarUrl || undefined,
       },
       token,
+    };
+  }
+
+  async updateUser(
+    userId: string,
+    data: UpdateUserDto
+  ): Promise<{ user: any }> {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        avatarUrl: data.avatarUrl,
+      },
+    });
+
+    return {
+      user: {
+        id: Number(user.id),
+        username: user.email.split("@")[0],
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        image: user.avatarUrl || undefined,
+      },
     };
   }
 }
