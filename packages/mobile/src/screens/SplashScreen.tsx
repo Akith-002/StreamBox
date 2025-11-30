@@ -10,12 +10,16 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import Logo from "../components/Logo";
 import { spacing, fontSizes } from "../constants/theme";
+import { useTheme } from "../hooks/useTheme";
 
 const SplashScreen = () => {
   // Animation Values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const textTranslateY = useRef(new Animated.Value(20)).current;
+
+  const { colors, theme } = useTheme();
+  const isDark = theme === "dark";
 
   useEffect(() => {
     // Sequence: Fade In -> Scale Up -> Slide Text
@@ -41,16 +45,18 @@ const SplashScreen = () => {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
-        barStyle="light-content"
+        barStyle={isDark ? "light-content" : "dark-content"}
         translucent
         backgroundColor="transparent"
       />
 
-      {/* Premium Gradient Background */}
       <LinearGradient
-        colors={["#0F172A", "#1E1B4B", "#312E81"]}
+        colors={[
+          colors.background,
+          colors.backgroundSecondary || colors.surface,
+        ]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -67,7 +73,9 @@ const SplashScreen = () => {
           ]}
         >
           {/* Logo Container */}
-          <View style={styles.logoContainer}>
+          <View
+            style={[styles.logoContainer, { shadowColor: colors.primaryDark }]}
+          >
             <Logo size={120} showText={false} />
           </View>
 
@@ -80,34 +88,37 @@ const SplashScreen = () => {
               },
             ]}
           >
-            <Text style={styles.appName}>StreamBox</Text>
-            <Text style={styles.tagline}>Unlimited Entertainment</Text>
+            <Text style={[styles.appName, { color: colors.text }]}>
+              StreamBox
+            </Text>
+            <Text style={[styles.tagline, { color: colors.textLight }]}>
+              Unlimited Entertainment
+            </Text>
           </Animated.View>
         </Animated.View>
       </View>
 
       {/* Footer Loader */}
       <View style={styles.footer}>
-        <ActivityIndicator size="small" color={LOADER_COLOR} />
-        <Text style={styles.versionText}>v1.0.0</Text>
+        <ActivityIndicator
+          size="small"
+          color={colors.primaryLight || colors.primary}
+        />
+        <Text style={[styles.versionText, { color: colors.textSecondary }]}>
+          v1.0.0
+        </Text>
       </View>
     </View>
   );
 };
 
-const BACKGROUND_COLOR = "#0F172A";
 const SHADOW_COLOR = "#4F46E5";
-const TEXT_COLOR = "#FFFFFF";
-const TAGLINE_COLOR = "#94A3B8";
-const LOADER_COLOR = "#A5B4FC";
-const VERSION_COLOR = "#64748B";
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: BACKGROUND_COLOR,
   },
   centerContent: {
     flex: 1,
@@ -132,14 +143,12 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 42,
     fontWeight: "800",
-    color: TEXT_COLOR,
     letterSpacing: 2,
     textAlign: "center",
   },
   tagline: {
     marginTop: 8,
     fontSize: fontSizes.md,
-    color: TAGLINE_COLOR,
     letterSpacing: 1,
     textAlign: "center",
     fontWeight: "500",
@@ -151,7 +160,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   versionText: {
-    color: VERSION_COLOR,
     fontSize: 12,
     letterSpacing: 1,
   },

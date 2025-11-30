@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { AuthService } from "../services/auth.service";
-import { RegisterDto, LoginDto } from "@streambox/shared";
+import { RegisterDto, LoginDto, UpdateUserDto } from "@streambox/shared";
+import { AuthRequest } from "../middleware/auth";
+import { AppError } from "../middleware/errorHandler";
 
 const authService = new AuthService();
 
@@ -26,6 +28,24 @@ export const login = async (
   try {
     const data: LoginDto = req.body;
     const result = await authService.login(data);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateUser = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      throw new AppError(401, "User not authenticated");
+    }
+    const data: UpdateUserDto = req.body;
+    const result = await authService.updateUser(userId, data);
     res.status(200).json(result);
   } catch (error) {
     next(error);

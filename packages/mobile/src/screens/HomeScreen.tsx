@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
-  ImageBackground,
   Animated,
   Image,
   StatusBar,
@@ -24,25 +23,25 @@ import {
   useGetPopularMoviesQuery,
   useGetTopRatedMoviesQuery,
 } from "../api/backendApi";
-import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
-import { Movie, TVShow, MediaItem, isMovie, isTVShow } from "../types/Movie";
+import { spacing, borderRadius } from "../constants/theme";
+import { Movie, MediaItem, isMovie, isTVShow } from "../types/Movie";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
 import SkeletonLoader from "../components/SkeletonLoader";
 
 const HERO_ROTATION_INTERVAL = 5000;
 const screenWidth = Dimensions.get("window").width;
-const HERO_HEIGHT = screenWidth * 1.3; // Taller, more immersive hero
+const HERO_HEIGHT = screenWidth * 1.3;
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme(); // Get theme to check mode if needed
 
   // Pagination state
   const [trendingPage, setTrendingPage] = useState(1);
   const [popularPage, setPopularPage] = useState(1);
   const [topRatedPage, setTopRatedPage] = useState(1);
 
-  // API Hooks with refetch capability and pagination
+  // API Hooks
   const {
     data: trendingMoviesData,
     isLoading: loadingMovies,
@@ -65,18 +64,16 @@ export default function HomeScreen() {
   } = useGetTopRatedMoviesQuery(topRatedPage);
 
   const isLoading = loadingMovies || loadingPopular || loadingTopRated;
-
   const [refreshing, setRefreshing] = useState(false);
-
   const [heroIndex, setHeroIndex] = useState(0);
-  const fadeAnim = useRef(new Animated.Value(1)).current; // Start at 1
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  // Accumulated results for infinite scroll
+  // Accumulated results
   const [allTrendingMovies, setAllTrendingMovies] = useState<Movie[]>([]);
   const [allPopularMovies, setAllPopularMovies] = useState<Movie[]>([]);
   const [allTopRatedMovies, setAllTopRatedMovies] = useState<Movie[]>([]);
 
-  // Update accumulated results when new data arrives
+  // Update accumulated results
   useEffect(() => {
     if (trendingMoviesData?.results) {
       setAllTrendingMovies((prev) => {
@@ -117,26 +114,21 @@ export default function HomeScreen() {
   const popularMovies = allPopularMovies;
   const topRatedMovies = allTopRatedMovies;
 
-  // Filter and Setup Hero Items (use first page only)
   const heroItems = [...trendingMovies.slice(0, 5)]
     .filter((item): item is Movie => isMovie(item))
     .slice(0, 5);
 
   const currentHero = heroItems[heroIndex];
 
-  // Pull to Refresh Handler
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      // Reset pages to 1
       setTrendingPage(1);
       setPopularPage(1);
       setTopRatedPage(1);
-      // Clear accumulated data
       setAllTrendingMovies([]);
       setAllPopularMovies([]);
       setAllTopRatedMovies([]);
-      // Refetch
       await Promise.all([refetchMovies(), refetchPopular(), refetchTopRated()]);
     } catch (error) {
       console.error("Error refreshing data:", error);
@@ -145,19 +137,15 @@ export default function HomeScreen() {
     }
   };
 
-  // Carousel Logic
   useEffect(() => {
     if (heroItems.length === 0) return;
     const interval = setInterval(() => {
-      // Fade out
       Animated.timing(fadeAnim, {
         toValue: 0,
         duration: 500,
         useNativeDriver: true,
       }).start(() => {
-        // Switch Content
         setHeroIndex((prev) => (prev + 1) % heroItems.length);
-        // Fade in
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 500,
@@ -175,8 +163,6 @@ export default function HomeScreen() {
     });
   };
 
-  // --- Render Components ---
-
   const HeroSection = () => {
     if (!currentHero) return null;
 
@@ -184,8 +170,6 @@ export default function HomeScreen() {
     const imageUri = currentHero.poster_path
       ? `${TMDB_IMAGE_BASE_URL}${currentHero.poster_path}`
       : null;
-
-    // Get genres or date for meta info
     const metaText = currentHero.release_date?.slice(0, 4) || "Movie";
 
     return (
@@ -198,26 +182,27 @@ export default function HomeScreen() {
               resizeMode="cover"
             />
           )}
-          {/* Gradient Mesh for blending */}
+
+          {/* FIX: Use specific dark gradient for bottom visibility in all modes */}
           <LinearGradient
-            colors={["transparent", colors.background]}
+            colors={["transparent", "rgba(0,0,0,0.6)", "rgba(0,0,0,0.9)"]}
             style={styles.heroGradientBottom}
-            locations={[0.4, 1]}
+            locations={[0, 0.6, 1]}
           />
+
           <LinearGradient
-            colors={["rgba(0,0,0,0.6)", "transparent"]}
+            colors={["rgba(0,0,0,0.4)", "transparent"]}
             style={styles.heroGradientTop}
           />
         </Animated.View>
 
-        {/* Hero Info Overlay */}
         <View style={styles.heroContentContainer}>
           <View style={styles.heroTagContainer}>
             <Text style={styles.heroTagText}>Trending Now</Text>
           </View>
 
           <Animated.Text
-            style={[styles.heroTitle, { opacity: fadeAnim, color: "#FFF" }]}
+            style={[styles.heroTitle, { opacity: fadeAnim, color: "#FFFFFF" }]}
           >
             {title}
           </Animated.Text>
@@ -235,23 +220,23 @@ export default function HomeScreen() {
 
           <View style={styles.heroButtons}>
             <TouchableOpacity
-              style={[styles.playButton, { backgroundColor: "#FFF" }]}
+              style={[styles.playButton, { backgroundColor: "#FFFFFF" }]}
               activeOpacity={0.8}
               onPress={() => handleMediaPress(currentHero)}
             >
-              <Feather name="play" size={20} color="#000" />
+              <Feather name="play" size={20} color="#000000" />
               <Text style={styles.playButtonText}>Play</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[
                 styles.detailsButton,
-                { backgroundColor: "rgba(255,255,255,0.2)" },
+                { backgroundColor: "rgba(255,255,255,0.25)" }, // Slightly more opaque
               ]}
               activeOpacity={0.8}
               onPress={() => handleMediaPress(currentHero)}
             >
-              <Feather name="info" size={20} color="#FFF" />
+              <Feather name="info" size={20} color="#FFFFFF" />
               <Text style={styles.detailsButtonText}>Details</Text>
             </TouchableOpacity>
           </View>
@@ -275,9 +260,8 @@ export default function HomeScreen() {
           source={{ uri: `${TMDB_IMAGE_BASE_URL}${posterPath}` }}
           style={[styles.cardImage, { backgroundColor: colors.card }]}
         />
-        {/* Only show title if it's not too long, otherwise clean look */}
         <Text
-          style={[styles.cardTitle, { color: colors.textSecondary }]}
+          style={[styles.cardTitle, { color: colors.text }]} // Use standard text color for cards
           numberOfLines={1}
         >
           {title}
@@ -317,7 +301,7 @@ export default function HomeScreen() {
       edges={["top"]}
     >
       <StatusBar
-        barStyle="light-content"
+        barStyle={theme === "dark" ? "light-content" : "dark-content"}
         translucent
         backgroundColor="transparent"
       />
@@ -336,8 +320,15 @@ export default function HomeScreen() {
         <HeroSection />
 
         <View style={styles.contentContainer}>
-          {/* Trending Movies */}
-          <SectionHeader title="Trending Movies" />
+          <SectionHeader
+            title="Trending Movies"
+            onSeeAll={() =>
+              navigation.navigate("HomeTab", {
+                screen: "AllItems",
+                params: { category: "trending", title: "Trending Movies" },
+              })
+            }
+          />
           <FlatList
             data={trendingMovies}
             horizontal
@@ -366,8 +357,15 @@ export default function HomeScreen() {
             }
           />
 
-          {/* Popular Movies */}
-          <SectionHeader title="Popular Movies" />
+          <SectionHeader
+            title="Popular Movies"
+            onSeeAll={() =>
+              navigation.navigate("HomeTab", {
+                screen: "AllItems",
+                params: { category: "popular", title: "Popular Movies" },
+              })
+            }
+          />
           <FlatList
             data={popularMovies}
             horizontal
@@ -396,8 +394,15 @@ export default function HomeScreen() {
             }
           />
 
-          {/* Top Rated */}
-          <SectionHeader title="Top Rated Movies" />
+          <SectionHeader
+            title="Top Rated Movies"
+            onSeeAll={() =>
+              navigation.navigate("HomeTab", {
+                screen: "AllItems",
+                params: { category: "topRated", title: "Top Rated Movies" },
+              })
+            }
+          />
           <FlatList
             data={topRatedMovies}
             horizontal
@@ -425,36 +430,6 @@ export default function HomeScreen() {
               ) : null
             }
           />
-
-          {/* Trending Movies with Infinite Scroll */}
-          <SectionHeader title="Trending Now" />
-          <FlatList
-            data={trendingMovies}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            renderItem={renderMediaCard}
-            contentContainerStyle={styles.listContent}
-            keyExtractor={(item) => `trend-${item.id}`}
-            onEndReached={() => {
-              if (
-                trendingMoviesData &&
-                trendingPage < trendingMoviesData.total_pages &&
-                !fetchingTrending
-              ) {
-                setTrendingPage((prev) => prev + 1);
-              }
-            }}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={
-              fetchingTrending ? (
-                <ActivityIndicator
-                  size="small"
-                  color={colors.primary}
-                  style={{ marginLeft: 16 }}
-                />
-              ) : null
-            }
-          />
         </View>
 
         <View style={{ height: 100 }} />
@@ -469,7 +444,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  // Hero Styles
   heroContainer: {
     height: HERO_HEIGHT,
     width: screenWidth,
@@ -488,7 +462,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: "60%",
+    height: "80%", // Increased height for better gradient coverage
   },
   heroGradientTop: {
     position: "absolute",
@@ -500,7 +474,7 @@ const styles = StyleSheet.create({
   heroContentContainer: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
-    alignItems: "center", // Center align for modern look
+    alignItems: "center",
   },
   heroTagContainer: {
     backgroundColor: "rgba(255,255,255,0.2)",
@@ -509,7 +483,7 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(255,255,255,0.3)",
   },
   heroTagText: {
     color: "#FFF",
@@ -519,13 +493,13 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   heroTitle: {
-    fontSize: 36, // Larger title
+    fontSize: 32,
     fontWeight: "800",
     textAlign: "center",
     marginBottom: 8,
-    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowColor: "rgba(0,0,0,0.7)",
     textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    textShadowRadius: 6,
   },
   heroMetaRow: {
     flexDirection: "row",
@@ -534,12 +508,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   heroMetaText: {
-    color: "rgba(255,255,255,0.8)",
+    color: "#EEE",
     fontSize: 13,
     fontWeight: "600",
+    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   heroDot: {
-    color: "rgba(255,255,255,0.4)",
+    color: "#CCC",
     fontSize: 13,
   },
   ratingContainer: {
@@ -582,14 +559,14 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     gap: 8,
     maxWidth: 160,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
   },
   detailsButtonText: {
     color: "#FFF",
     fontSize: 16,
     fontWeight: "600",
   },
-
-  // Content Styles
   contentContainer: {
     marginTop: spacing.md,
     paddingBottom: spacing.xl,
@@ -612,11 +589,11 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: spacing.lg,
-    paddingRight: spacing.sm, // Adjust for last item
+    paddingRight: spacing.sm,
   },
   cardContainer: {
     marginRight: spacing.md,
-    width: 120, // Fixed width for uniformity
+    width: 120,
   },
   cardImage: {
     width: 120,
