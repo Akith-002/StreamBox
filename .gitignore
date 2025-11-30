@@ -139,6 +139,7 @@ packages/server/dist/
 packages/server/build/
 packages/server/.env.example.local
 packages/server/.cache/
+packages/server/src/generated/
 
 # ============================================================================
 # MOBILE-SPECIFIC
@@ -177,3 +178,9 @@ dist-ssr/
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.cjs
+
+# ============================================================================
+# ADDITIONAL COMMON IGNORES
+# ============================================================================
+.watchman/
+.eslintcache

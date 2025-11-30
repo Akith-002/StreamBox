@@ -43,7 +43,7 @@ StreamBox is a full-stack movie browsing application demonstrating industry-stan
 - **Monorepo Architecture** - Organized workspace with shared TypeScript types
 - **End-to-End Type Safety** - Type-safe communication between frontend and backend
 - **Production-Ready Security** - JWT authentication, Argon2 password hashing, hardware-encrypted storage
-- **Modern UX** - Skeleton loaders, infinite scroll, shared element transitions, dark mode
+- **Modern UX** - Skeleton loaders, infinite scroll, pull-to-refresh, dark mode
 - **Cloud Persistence** - Favorites synced across devices via custom backend
 
 ---
@@ -122,7 +122,6 @@ StreamBox is a full-stack movie browsing application demonstrating industry-stan
 
 #### ✨ Advanced UX
 
-- ✅ Shared element transitions (React Native Reanimated)
 - ✅ Skeleton loading placeholders
 - ✅ Pull-to-refresh functionality
 - ✅ Optimistic UI updates
@@ -149,7 +148,6 @@ StreamBox implements a **Backend for Frontend (BFF)** pattern with a monorepo st
 │  - Navigation (Stack + Tabs)                                │
 │  - State Management (Redux)                                 │
 │  - Secure Storage (SecureStore)                             │
-│  - Biometric Auth (Local Authentication)                    │
 └─────────────────────┬───────────────────────────────────────┘
                       │
                  HTTPS (REST)
@@ -196,10 +194,8 @@ For detailed architecture documentation, see [ARCHITECTURE.md](./ARCHITECTURE.md
 | **Navigation**       | React Navigation v7         | Stack and tab navigation          |
 | **Forms**            | React Hook Form + Yup       | Form handling and validation      |
 | **Security**         | Expo SecureStore            | Hardware-encrypted token storage  |
-| **Biometrics**       | Expo Local Authentication   | FaceID/TouchID integration        |
 | **UI**               | React Native built-ins      | Responsive, animated components   |
 | **Icons**            | Expo Vector Icons (Feather) | Consistent iconography            |
-| **Animations**       | React Native Reanimated     | Shared element transitions        |
 
 ### Backend (Server)
 
@@ -430,20 +426,7 @@ npm start
 
 #### Mobile App
 
-Build standalone apps:
-
-```bash
-cd packages/mobile
-
-# iOS (requires macOS and Apple Developer account)
-eas build --platform ios
-
-# Android
-eas build --platform android
-
-# Both
-eas build --platform all
-```
+For production builds, configure Expo Application Services (EAS) or use Expo CLI. See Expo documentation for setup.
 
 ---
 
@@ -493,7 +476,6 @@ To run skipped tests, ensure `TMDB_API_KEY` is set in `.env`.
 - [ ] Favorites persist after logout/login
 - [ ] Dark mode toggle works across all screens
 - [ ] Biometric authentication works (if device supports it)
-- [ ] Infinite scroll loads more movies
 - [ ] Pull-to-refresh updates movie list
 - [ ] Search functionality returns correct results
 
@@ -748,33 +730,33 @@ Response: 200 OK
 
 ## 📸 Screenshots
 
-<details>
-<summary>Click to view screenshots</summary>
+> **Note**: The images below come from the `screenshots/` folder in the repository root.
+> Filenames and paths must match exactly.
 
-### Light Mode
+### Authentication Flow
 
-- **Login Screen** - Clean authentication interface
-- **Registration** - Form with validation
-- **Home Screen** - Trending movies grid
-- **Movie Details** - Comprehensive movie information
-- **Skeleton Loaders** - Loading state placeholders
+<img src="screenshots/login-screen.jpg" alt="Login Screen" width="360" />
+<img src="screenshots/register-screen.jpg" alt="Register Screen" width="360" />
+<img src="screenshots/forgot-password.jpg" alt="Forgot Password" width="360" />
 
-### Dark Mode
+### Main App Screens
 
-- **Home Screen (Dark)** - Dark theme with proper contrast
-- **Movie Details (Dark)** - Professional dark mode design
-- **Profile Screen** - User settings and theme toggle
+<img src="screenshots/home-screen-light.jpg" alt="Home - Light" width="360" />
+<img src="screenshots/home-screen-dark.jpg" alt="Home - Dark" width="360" />
+<img src="screenshots/movie-details-light.jpg" alt="Movie Details - Light" width="360" />
+<img src="screenshots/movie-details-dark.jpg" alt="Movie Details - Dark" width="360" />
+<img src="screenshots/search-screen.jpg" alt="Search Screen" width="360" />
+<img src="screenshots/discover-screen.jpg" alt="Discover Screen" width="360" />
+<img src="screenshots/favorites-screen.jpg" alt="Favorites Screen" width="360" />
+<img src="screenshots/profile-screen.jpg" alt="Profile Screen" width="360" />
 
-### Features
+### UI / State Screens
 
-- **Favorites Screen** - Cloud-synced favorites
-- **Search Screen** - Movie search functionality
-- **Biometric Prompt** - FaceID/TouchID authentication
-- **Shared Element Transition** - Smooth poster animation
+<img src="screenshots/empty-state-favourites-screen.jpg" alt="Empty Favorites / Empty State" width="360" />
 
-Screenshots are located in the `screenshots/` folder.
+> Images are displayed at a constrained width of `360px` for a better README layout. If you'd prefer a different width, tell me the pixel width (for example `320`, `400`, or `600`) and I will update the README accordingly.
 
-</details>
+---
 
 ---
 
@@ -789,7 +771,6 @@ A comprehensive 3-minute demo video showcasing all features is available:
   - Add/remove favorites
   - Cloud sync demonstration (logout/login test)
   - Dark mode toggle
-  - Biometric authentication
   - Infinite scroll and pull-to-refresh
   - Backend showcase
 
@@ -1107,9 +1088,7 @@ SOFTWARE.
 - Skeleton loading states
 - Infinite scroll pagination
 - Pull-to-refresh
-- Shared element transitions
 - Dark mode support
-- Biometric authentication
 
 💻 **Code Quality**
 
