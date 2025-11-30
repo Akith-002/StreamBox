@@ -475,7 +475,6 @@ To run skipped tests, ensure `TMDB_API_KEY` is set in `.env`.
 - [ ] User can remove movies from favorites
 - [ ] Favorites persist after logout/login
 - [ ] Dark mode toggle works across all screens
-- [ ] Biometric authentication works (if device supports it)
 - [ ] Pull-to-refresh updates movie list
 - [ ] Search functionality returns correct results
 

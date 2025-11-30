@@ -35,7 +35,6 @@ StreamBox implements a **Backend for Frontend (BFF)** pattern with a monorepo st
 │   │  ┌───────────────────────────────────────────┐  │      │
 │   │  │  Security Layer                           │  │      │
 │   │  │  - Expo SecureStore (JWT tokens)          │  │      │
-│   │  │  - Expo Local Authentication (biometric)  │  │      │
 │   │  └───────────────────────────────────────────┘  │      │
 │   └─────────────────────────────────────────────────┘      │
 │                            │                                 │
@@ -316,7 +315,6 @@ const user = await prisma.user.findUnique({ where: { email } });
 **1. Client-Side Security**
 
 - Hardware-encrypted token storage (Expo SecureStore)
-- Biometric authentication (FaceID/TouchID)
 - No sensitive data in client code
 - Secure HTTPS communication
 
@@ -408,12 +406,6 @@ const user = await prisma.user.findUnique({ where: { email } });
 - Hardware-backed encryption
 - Simple API
 - iOS Keychain / Android Keystore
-
-**Expo Local Authentication**
-
-- FaceID/TouchID support
-- Native biometric APIs
-- Secure authentication
 
 ### Backend (Server)
 
@@ -525,7 +517,7 @@ const user = await prisma.user.findUnique({ where: { email } });
 - ✅ **Infinite scroll** - Lazy loading
 - ✅ **RTK Query caching** - Reduce API calls
 - ✅ **Optimistic updates** - Instant UI feedback
-- ✅ **Shared element transitions** - Smooth animations
+- ✅ **Pull-to-refresh** - Manual data refresh
 
 ### Future Optimizations
 
