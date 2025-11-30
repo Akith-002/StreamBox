@@ -754,10 +754,6 @@ Response: 200 OK
 
 <img src="screenshots/empty-state-favourites-screen.jpg" alt="Empty Favorites / Empty State" width="360" />
 
-> Images are displayed at a constrained width of `360px` for a better README layout. If you'd prefer a different width, tell me the pixel width (for example `320`, `400`, or `600`) and I will update the README accordingly.
-
----
-
 ---
 
 ## 🎥 Demo Video
