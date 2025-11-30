@@ -1,5 +1,13 @@
 import React, { memo } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  StyleProp,
+  ViewStyle,
+} from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTheme } from "../hooks/useTheme";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
@@ -9,114 +17,108 @@ import { Movie } from "../types/Movie";
 interface MovieCardProps {
   movie: Movie;
   onPress: () => void;
+  style?: StyleProp<ViewStyle>;
 }
 
-function MovieCard({ movie, onPress }: MovieCardProps) {
+function MovieCard({ movie, onPress, style }: MovieCardProps) {
   const { colors } = useTheme();
+
   const posterUri = movie.poster_path
     ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}`
     : undefined;
-  const releaseYear = movie.release_date
-    ? movie.release_date.slice(0, 4)
-    : "TBA";
+
+  const releaseYear = movie.release_date ? movie.release_date.slice(0, 4) : "";
 
   return (
     <TouchableOpacity
-      style={[
-        styles.card,
-        { backgroundColor: colors.card, borderColor: colors.border },
-      ]}
+      style={[styles.container, style]}
       onPress={onPress}
-      activeOpacity={0.8}
+      activeOpacity={0.7}
     >
-      {posterUri ? (
-        <Image source={{ uri: posterUri }} style={styles.poster} />
-      ) : (
-        <View
-          style={[
-            styles.posterPlaceholder,
-            { backgroundColor: colors.backgroundSecondary },
-          ]}
-        >
-          <Feather name="film" size={32} color={colors.textLight} />
+      <View style={[styles.imageContainer, { backgroundColor: colors.card }]}>
+        {posterUri ? (
+          <Image
+            source={{ uri: posterUri }}
+            style={styles.poster}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.placeholder}>
+            <Feather name="film" size={24} color={colors.textLight} />
+          </View>
+        )}
+
+        <View style={styles.ratingBadge}>
+          <Feather name="star" size={10} color="#FFD700" />
+          <Text style={styles.ratingText}>
+            {movie.vote_average ? movie.vote_average.toFixed(1) : "0.0"}
+          </Text>
         </View>
-      )}
-      <View style={styles.body}>
-        <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
+      </View>
+
+      <View style={styles.details}>
+        <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
           {movie.title}
         </Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          {releaseYear}
-        </Text>
-        <View style={styles.ratingRow}>
-          <Feather name="star" size={14} color={colors.primary} />
-          <Text style={[styles.rating, { color: colors.text }]}>
-            {movie.vote_average.toFixed(1)}
+        {releaseYear ? (
+          <Text style={[styles.year, { color: colors.textSecondary }]}>
+            {releaseYear}
           </Text>
-          <Text style={[styles.voteCount, { color: colors.textSecondary }]}>
-            {`(${movie.vote_count?.toLocaleString() || "0"})`}
-          </Text>
-        </View>
-        <Text
-          style={[styles.overview, { color: colors.textLight }]}
-          numberOfLines={3}
-        >
-          {movie.overview || "No synopsis yet."}
-        </Text>
+        ) : null}
       </View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    borderRadius: borderRadius.lg,
-    marginVertical: spacing.sm,
-    padding: spacing.md,
+  container: {
+    width: "100%",
+  },
+  imageContainer: {
+    width: "100%",
+    aspectRatio: 2 / 3,
+    borderRadius: borderRadius.md,
+    overflow: "hidden",
+    position: "relative",
+    marginBottom: spacing.xs,
     ...shadows.small,
-    borderWidth: 1,
   },
   poster: {
-    width: 100,
-    height: 150,
-    borderRadius: borderRadius.md,
+    width: "100%",
+    height: "100%",
   },
-  posterPlaceholder: {
-    width: 100,
-    height: 150,
-    borderRadius: borderRadius.md,
+  placeholder: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  body: {
-    flex: 1,
-    marginLeft: spacing.md,
-  },
-  title: {
-    fontSize: fontSizes.lg,
-    fontWeight: "700",
-  },
-  subtitle: {
-    fontSize: fontSizes.sm,
-    marginTop: spacing.xs,
-  },
-  ratingRow: {
+  ratingBadge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
     flexDirection: "row",
     alignItems: "center",
-    marginTop: spacing.sm,
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    gap: 3,
   },
-  rating: {
-    marginLeft: spacing.xs,
-    fontWeight: "600",
+  ratingText: {
+    color: "#FFF",
+    fontSize: 10,
+    fontWeight: "700",
   },
-  voteCount: {
-    marginLeft: spacing.sm,
+  details: {
+    paddingHorizontal: 2,
   },
-  overview: {
-    marginTop: spacing.sm,
+  title: {
     fontSize: fontSizes.sm,
-    lineHeight: 20,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  year: {
+    fontSize: 11,
   },
 });
 

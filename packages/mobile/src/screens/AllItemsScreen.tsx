@@ -5,8 +5,12 @@ import {
   StyleSheet,
   FlatList,
   ActivityIndicator,
+  TouchableOpacity,
+  Dimensions,
+  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { useTheme } from "../hooks/useTheme";
 import {
@@ -16,6 +20,12 @@ import {
 } from "../api/backendApi";
 import MovieCard from "../components/MovieCard";
 import { Movie } from "../types/Movie";
+import { spacing, fontSizes } from "../constants/theme";
+
+const { width } = Dimensions.get("window");
+const COLUMN_COUNT = 3;
+const SPACING = spacing.md;
+const ITEM_WIDTH = (width - SPACING * (COLUMN_COUNT + 1)) / COLUMN_COUNT;
 
 type RouteParams = {
   category?: string;
@@ -26,6 +36,7 @@ export default function AllItemsScreen() {
   const route = useRoute();
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
+
   const { category = "trending", title = "Items" } = (route.params ||
     {}) as RouteParams;
 
@@ -50,16 +61,13 @@ export default function AllItemsScreen() {
 
   const isFetching = fetchingTrending || fetchingPopular || fetchingTopRated;
 
-  // Reset when category changes
   useEffect(() => {
     setPage(1);
     setItems([]);
   }, [category]);
 
-  // Accumulate pages into `items` to avoid replacing the list on each page fetch
   useEffect(() => {
     if (!results || results.length === 0) return;
-
     setItems((prev) => {
       if (page === 1) return results as Movie[];
       const existingIds = new Set(prev.map((m) => m.id));
@@ -70,14 +78,12 @@ export default function AllItemsScreen() {
     });
   }, [results, page]);
 
-  // when fetching finishes, stop the loadingMore guard
   useEffect(() => {
     if (!isFetching) setLoadingMore(false);
   }, [isFetching]);
 
   const loadMore = () => {
     if (loadingMore || isFetching) return;
-
     const totalPages =
       (category === "trending" && trendingData?.total_pages) ||
       (category === "popular" && popularData?.total_pages) ||
@@ -92,54 +98,99 @@ export default function AllItemsScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: Movie }) => (
-      <MovieCard
-        movie={item}
-        onPress={() =>
-          navigation.navigate("HomeTab", {
-            screen: "Details",
-            params: { movieId: item.id },
-          })
-        }
-      />
+      <View style={{ width: ITEM_WIDTH, marginBottom: spacing.lg }}>
+        <MovieCard
+          movie={item}
+          onPress={() =>
+            navigation.navigate("HomeTab", {
+              screen: "Details",
+              params: { movieId: item.id },
+            })
+          }
+        />
+      </View>
     ),
     [navigation]
   );
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
-    >
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
-      </View>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
 
-      <FlatList
-        data={items}
-        keyExtractor={(item) => `all-${item.id}`}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.8}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={5}
-        removeClippedSubviews={true}
-        ListFooterComponent={
-          isFetching || loadingMore ? (
-            <ActivityIndicator
-              style={{ marginVertical: 16 }}
-              color={colors.primary}
-            />
-          ) : null
-        }
-      />
-    </SafeAreaView>
+      <SafeAreaView edges={["top"]} style={styles.safeArea}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Feather name="arrow-left" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+          <View style={{ width: 24 }} />
+        </View>
+
+        <FlatList
+          data={items}
+          keyExtractor={(item) => `all-${category}-${item.id}`}
+          renderItem={renderItem}
+          numColumns={COLUMN_COUNT}
+          columnWrapperStyle={styles.columnWrapper}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          initialNumToRender={12}
+          maxToRenderPerBatch={12}
+          windowSize={5}
+          removeClippedSubviews={true}
+          ListFooterComponent={
+            isFetching || loadingMore ? (
+              <View style={styles.loaderContainer}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : (
+              <View style={{ height: 40 }} />
+            )
+          }
+        />
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { padding: 16 },
-  title: { fontSize: 20, fontWeight: "700" },
-  list: { paddingHorizontal: 12, paddingBottom: 24 },
+  container: {
+    flex: 1,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  backButton: {
+    padding: 4,
+  },
+  title: {
+    fontSize: fontSizes.lg,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  listContent: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.xl,
+  },
+  columnWrapper: {
+    justifyContent: "space-between",
+  },
+  loaderContainer: {
+    marginVertical: spacing.xl,
+    alignItems: "center",
+  },
 });
