@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTheme } from "../hooks/useTheme";
@@ -11,7 +11,7 @@ interface MovieCardProps {
   onPress: () => void;
 }
 
-export default function MovieCard({ movie, onPress }: MovieCardProps) {
+function MovieCard({ movie, onPress }: MovieCardProps) {
   const { colors } = useTheme();
   const posterUri = movie.poster_path
     ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}`
@@ -119,3 +119,5 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
+
+export default memo(MovieCard);

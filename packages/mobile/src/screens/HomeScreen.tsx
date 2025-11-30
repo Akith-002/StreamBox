@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
-  ImageBackground,
   Animated,
   Image,
   StatusBar,
@@ -24,8 +23,8 @@ import {
   useGetPopularMoviesQuery,
   useGetTopRatedMoviesQuery,
 } from "../api/backendApi";
-import { spacing, fontSizes, borderRadius, shadows } from "../constants/theme";
-import { Movie, TVShow, MediaItem, isMovie, isTVShow } from "../types/Movie";
+import { spacing, borderRadius } from "../constants/theme";
+import { Movie, MediaItem, isMovie, isTVShow } from "../types/Movie";
 import { TMDB_IMAGE_BASE_URL } from "../constants/config";
 import SkeletonLoader from "../components/SkeletonLoader";
 
@@ -337,7 +336,15 @@ export default function HomeScreen() {
 
         <View style={styles.contentContainer}>
           {/* Trending Movies */}
-          <SectionHeader title="Trending Movies" />
+          <SectionHeader
+            title="Trending Movies"
+            onSeeAll={() =>
+              navigation.navigate("HomeTab", {
+                screen: "AllItems",
+                params: { category: "trending", title: "Trending Movies" },
+              })
+            }
+          />
           <FlatList
             data={trendingMovies}
             horizontal
@@ -367,7 +374,15 @@ export default function HomeScreen() {
           />
 
           {/* Popular Movies */}
-          <SectionHeader title="Popular Movies" />
+          <SectionHeader
+            title="Popular Movies"
+            onSeeAll={() =>
+              navigation.navigate("HomeTab", {
+                screen: "AllItems",
+                params: { category: "popular", title: "Popular Movies" },
+              })
+            }
+          />
           <FlatList
             data={popularMovies}
             horizontal
@@ -397,7 +412,15 @@ export default function HomeScreen() {
           />
 
           {/* Top Rated */}
-          <SectionHeader title="Top Rated Movies" />
+          <SectionHeader
+            title="Top Rated Movies"
+            onSeeAll={() =>
+              navigation.navigate("HomeTab", {
+                screen: "AllItems",
+                params: { category: "topRated", title: "Top Rated Movies" },
+              })
+            }
+          />
           <FlatList
             data={topRatedMovies}
             horizontal
@@ -427,7 +450,15 @@ export default function HomeScreen() {
           />
 
           {/* Trending Movies with Infinite Scroll */}
-          <SectionHeader title="Trending Now" />
+          <SectionHeader
+            title="Trending Now"
+            onSeeAll={() =>
+              navigation.navigate("HomeTab", {
+                screen: "AllItems",
+                params: { category: "trending", title: "Trending Now" },
+              })
+            }
+          />
           <FlatList
             data={trendingMovies}
             horizontal
