@@ -10,6 +10,7 @@ import type {
   PaginatedMoviesResponse,
   FavoriteDto,
   AddFavoriteDto,
+  User,
 } from "@streambox/shared";
 
 export const backendApi = createApi({
@@ -43,7 +44,7 @@ export const backendApi = createApi({
       }),
       invalidatesTags: ["Auth"],
     }),
-    updateUser: builder.mutation<{ user: any }, UpdateUserDto>({
+    updateUser: builder.mutation<{ user: User }, UpdateUserDto>({
       query: (data) => ({
         url: "/auth/update",
         method: "PUT",

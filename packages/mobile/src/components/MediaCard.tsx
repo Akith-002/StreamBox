@@ -30,27 +30,17 @@ export default function MediaCard({ item, onPress }: MediaCardProps) {
     : false;
 
   const handleFavouritePress = async () => {
-    console.log(
-      "Favourite pressed:",
-      item.id,
-      mediaType,
-      isFavourite ? "removing" : "adding"
-    );
-
     try {
       if (isFavourite) {
         await removeFavorite({ tmdbId: item.id, mediaType }).unwrap();
-        console.log(`Removed ${mediaType} from favorites:`, item.id);
       } else {
         const title = isMovie(item) ? item.title : item.name;
-        console.log(`Adding ${mediaType} to favourites:`, item);
         await addFavorite({
           tmdbId: item.id,
           title,
           posterPath: item.poster_path,
           mediaType,
         }).unwrap();
-        console.log(`Added ${mediaType} to favorites:`, item.id);
       }
     } catch (error) {
       console.error("Error updating favorite:", error);
@@ -192,7 +182,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    backgroundColor: colors.overlay,
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: borderRadius.md,
@@ -201,7 +191,7 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 10,
     fontWeight: "bold",
-    color: "#FFFFFF",
+    color: colors.white,
   },
   info: {
     marginTop: spacing.sm,
@@ -225,7 +215,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: spacing.sm,
     right: spacing.sm,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    backgroundColor: colors.overlayStrong,
     width: 36,
     height: 36,
     borderRadius: 18,

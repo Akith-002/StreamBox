@@ -43,6 +43,14 @@ export const lightColors = {
   tabBarActive: "#6366F1",
   tabBarInactive: "#94A3B8",
   tabBarBackground: "#FFFFFF",
+
+  // Overlay
+  overlay: "rgba(0, 0, 0, 0.6)",
+  overlayStrong: "rgba(0, 0, 0, 0.7)",
+
+  // Common
+  white: "#FFFFFF",
+  transparent: "transparent",
 };
 
 export const darkColors = {
@@ -77,6 +85,14 @@ export const darkColors = {
   tabBarActive: "#6366F1",
   tabBarInactive: "#64748B",
   tabBarBackground: "#1E293B",
+
+  // Overlay
+  overlay: "rgba(0, 0, 0, 0.6)",
+  overlayStrong: "rgba(0, 0, 0, 0.7)",
+
+  // Common
+  white: "#FFFFFF",
+  transparent: "transparent",
 };
 
 // Typography

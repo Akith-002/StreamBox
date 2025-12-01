@@ -123,11 +123,11 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
   },
   outlineButton: {
-    backgroundColor: "transparent",
+    backgroundColor: colors.transparent,
     borderWidth: 2,
   },
   disabledButton: {
-    backgroundColor: "#94A3B8",
+    backgroundColor: colors.textLight,
     opacity: 0.5,
   },
   text: {
@@ -135,9 +135,9 @@ const styles = StyleSheet.create({
     fontWeight: "700" as const,
   },
   primaryText: {
-    color: "#FFFFFF",
+    color: colors.white,
   },
   disabledText: {
-    color: "#CBD5E1",
+    color: colors.textLight,
   },
 });
