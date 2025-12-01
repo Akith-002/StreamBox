@@ -759,7 +759,7 @@ Response: 200 OK
 
 A comprehensive 3-minute demo video showcasing all features is available:
 
-- **Video Link**: [Watch Demo Video](#) _(Update with actual link)_
+- **Video Link**: [Watch Demo Video](https://youtu.be/HNHyKKr8mJE)
 - **Features Shown**:
   - User registration and login
   - Movie browsing and details
@@ -767,7 +767,6 @@ A comprehensive 3-minute demo video showcasing all features is available:
   - Cloud sync demonstration (logout/login test)
   - Dark mode toggle
   - Infinite scroll and pull-to-refresh
-  - Backend showcase
 
 ---
 
